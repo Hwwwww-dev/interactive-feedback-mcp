@@ -1,30 +1,33 @@
 # Interactive Feedback MCP UI
 # Developed by Fábio Ferreira (https://x.com/fabiomlferreira)
 # Inspired by/related to dotcursorrules.com (https://dotcursorrules.com/)
-import os
-import sys
-import json
-import psutil
 import argparse
-import subprocess
-import threading
 import hashlib
+import json
+import os
+import subprocess
+import sys
+import threading
 from typing import Optional, TypedDict
 
+import psutil
+from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings
+from PySide6.QtGui import QTextCursor, QIcon, QKeyEvent, QFont, QFontDatabase, QPalette, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QCheckBox, QTextEdit, QGroupBox
 )
-from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings
-from PySide6.QtGui import QTextCursor, QIcon, QKeyEvent, QFont, QFontDatabase, QPalette, QColor
+
 
 class FeedbackResult(TypedDict):
     command_logs: str
     interactive_feedback: str
 
+
 class FeedbackConfig(TypedDict):
     run_command: str
     execute_automatically: bool
+
 
 def set_dark_title_bar(widget: QWidget, dark_title_bar: bool) -> None:
     # Ensure we're on Windows
@@ -60,16 +63,18 @@ def set_dark_title_bar(widget: QWidget, dark_title_bar: bool) -> None:
     temp_widget.show()
     temp_widget.deleteLater()  # Safe deletion in Qt event loop
 
+
 # Modern color scheme constants
-PRIMARY_BG = QColor(24, 24, 27)      # Rich dark background
-SECONDARY_BG = QColor(39, 39, 42)    # Card/container background  
-ACCENT_BG = QColor(63, 63, 70)       # Hover/active states
-TEXT_PRIMARY = QColor(250, 250, 250) # Primary text
-TEXT_SECONDARY = QColor(161, 161, 170) # Secondary text
-TEXT_MUTED = QColor(113, 113, 122)   # Muted text
+PRIMARY_BG = QColor(24, 24, 27)  # Rich dark background
+SECONDARY_BG = QColor(39, 39, 42)  # Card/container background
+ACCENT_BG = QColor(63, 63, 70)  # Hover/active states
+TEXT_PRIMARY = QColor(250, 250, 250)  # Primary text
+TEXT_SECONDARY = QColor(161, 161, 170)  # Secondary text
+TEXT_MUTED = QColor(113, 113, 122)  # Muted text
 ACCENT_COLOR = QColor(99, 102, 241)  # Indigo accent
 SUCCESS_COLOR = QColor(34, 197, 94)  # Green for success
-ERROR_COLOR = QColor(239, 68, 68)    # Red for errors
+ERROR_COLOR = QColor(239, 68, 68)  # Red for errors
+
 
 def get_dark_mode_palette(app: QApplication):
     darkPalette = app.palette()
@@ -95,6 +100,7 @@ def get_dark_mode_palette(app: QApplication):
     darkPalette.setColor(QPalette.Disabled, QPalette.HighlightedText, TEXT_MUTED)
     darkPalette.setColor(QPalette.PlaceholderText, TEXT_MUTED)
     return darkPalette
+
 
 def get_modern_stylesheet():
     """Modern flat design stylesheet"""
@@ -289,6 +295,7 @@ def get_modern_stylesheet():
     }
     """
 
+
 def kill_tree(process: subprocess.Popen):
     killed: list[psutil.Process] = []
     parent = psutil.Process(process.pid)
@@ -311,6 +318,7 @@ def kill_tree(process: subprocess.Popen):
                 proc.terminate()
         except psutil.Error:
             pass
+
 
 def get_user_environment() -> dict[str, str]:
     if sys.platform != "win32":
@@ -395,6 +403,7 @@ def get_user_environment() -> dict[str, str]:
     finally:
         CloseHandle(token)
 
+
 class FeedbackTextEdit(QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -410,8 +419,10 @@ class FeedbackTextEdit(QTextEdit):
         else:
             super().keyPressEvent(event)
 
+
 class LogSignals(QObject):
     append_log = Signal(str)
+
 
 class FeedbackUI(QMainWindow):
     def __init__(self, project_directory: str, prompt: str):
@@ -430,9 +441,9 @@ class FeedbackUI(QMainWindow):
         icon_path = os.path.join(script_dir, "images", "feedback.png")
         self.setWindowIcon(QIcon(icon_path))
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
-        
+
         self.settings = QSettings("InteractiveFeedbackMCP", "InteractiveFeedbackMCP")
-        
+
         # Load general UI settings for the main window (geometry, state)
         self.settings.beginGroup("MainWindow_General")
         geometry = self.settings.value("geometry")
@@ -447,22 +458,22 @@ class FeedbackUI(QMainWindow):
         state = self.settings.value("windowState")
         if state:
             self.restoreState(state)
-        self.settings.endGroup() # End "MainWindow_General" group
-        
+        self.settings.endGroup()  # End "MainWindow_General" group
+
         # Load project-specific settings (command, auto-execute, command section visibility)
         self.project_group_name = get_project_settings_group(self.project_directory)
         self.settings.beginGroup(self.project_group_name)
         loaded_run_command = self.settings.value("run_command", "", type=str)
         loaded_execute_auto = self.settings.value("execute_automatically", False, type=bool)
         command_section_visible = self.settings.value("commandSectionVisible", False, type=bool)
-        self.settings.endGroup() # End project-specific group
-        
+        self.settings.endGroup()  # End project-specific group
+
         self.config: FeedbackConfig = {
             "run_command": loaded_run_command,
             "execute_automatically": loaded_execute_auto
         }
 
-        self._create_ui() # self.config is used here to set initial values
+        self._create_ui()  # self.config is used here to set initial values
 
         # Set command section visibility AFTER _create_ui has created relevant widgets
         self.command_group.setVisible(command_section_visible)
@@ -488,21 +499,35 @@ class FeedbackUI(QMainWindow):
     def _create_ui(self):
         self.setWindowTitle("Interactive Feedback")
         self.setMinimumSize(500, 500)
-        
+
         # Apply modern stylesheet
         self.setStyleSheet(get_modern_stylesheet())
-        
+
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(16)
 
-        # Toggle Command Section Button
+        # Toggle Command Section Button and Restore Size Button in horizontal layout
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(10)
+        
+        # Toggle Command Section Button (80% width)
         self.toggle_command_button = QPushButton("Show Command Section")
         self.toggle_command_button.setProperty("class", "secondary")
         self.toggle_command_button.clicked.connect(self._toggle_command_section)
-        layout.addWidget(self.toggle_command_button)
+        
+        # Restore Default Size Button (20% width)
+        self.restore_size_button = QPushButton("Reset Size")
+        self.restore_size_button.setProperty("class", "secondary")
+        self.restore_size_button.clicked.connect(self.restore_default_window_size)
+        
+        # Add buttons to layout with 8:2 ratio
+        buttons_layout.addWidget(self.toggle_command_button, 9)
+        buttons_layout.addWidget(self.restore_size_button, 1)
+        
+        layout.addLayout(buttons_layout)
 
         # Command section
         self.command_group = QGroupBox("Command")
@@ -570,10 +595,10 @@ class FeedbackUI(QMainWindow):
         button_layout.addStretch()
         button_layout.addWidget(self.clear_button)
         console_layout_internal.addLayout(button_layout)
-        
+
         command_layout.addWidget(console_group)
 
-        self.command_group.setVisible(False) 
+        self.command_group.setVisible(False)
         layout.addWidget(self.command_group)
 
         # Feedback section with adjusted height
@@ -586,7 +611,7 @@ class FeedbackUI(QMainWindow):
         section_title = QLabel("AI Assistant Summary")
         section_title.setProperty("class", "section-title")
         feedback_layout.addWidget(section_title)
-        
+
         # Short description label (from self.prompt)
         self.description_label = QLabel(self.prompt)
         self.description_label.setProperty("class", "description")
@@ -598,7 +623,7 @@ class FeedbackUI(QMainWindow):
         font_metrics = self.feedback_text.fontMetrics()
         row_height = font_metrics.height()
         # Calculate height for 3 lines + some padding for margins
-        padding = self.feedback_text.contentsMargins().top() + self.feedback_text.contentsMargins().bottom() + 5 # 5 is extra vertical padding
+        padding = self.feedback_text.contentsMargins().top() + self.feedback_text.contentsMargins().bottom() + 5  # 5 is extra vertical padding
         self.feedback_text.setMinimumHeight(3 * row_height + padding)
 
         self.feedback_text.setPlaceholderText("Enter your feedback here (Ctrl+Enter to submit)")
@@ -610,42 +635,49 @@ class FeedbackUI(QMainWindow):
 
         # Set minimum height for feedback_group to accommodate its contents
         # This will be based on the section title, description label and the 3-line feedback_text
-        self.feedback_group.setMinimumHeight(section_title.sizeHint().height() + self.description_label.sizeHint().height() + self.feedback_text.minimumHeight() + submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10) # 10 for extra padding
+        self.feedback_group.setMinimumHeight(
+            section_title.sizeHint().height() + self.description_label.sizeHint().height() + self.feedback_text.minimumHeight() + submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10)  # 10 for extra padding
 
         # Add widgets in a specific order
         layout.addWidget(self.feedback_group)
-
-
 
     def _toggle_command_section(self):
         is_visible = self.command_group.isVisible()
         self.command_group.setVisible(not is_visible)
         if not is_visible:
             self.toggle_command_button.setText("Hide Command Section")
+            # When command section becomes visible, call restore_default_window_size method
+            self.restore_default_window_size()
         else:
             self.toggle_command_button.setText("Show Command Section")
-        
+            # When closing command section, only adjust window size
+            new_height = self.centralWidget().sizeHint().height()
+            current_width = self.width()
+            self.resize(current_width, new_height)
+
         # Immediately save the visibility state for this project
         self.settings.beginGroup(self.project_group_name)
         self.settings.setValue("commandSectionVisible", self.command_group.isVisible())
         self.settings.endGroup()
 
-        # Adjust window height only
-        new_height = self.centralWidget().sizeHint().height()
+    def restore_default_window_size(self):
+        """Restore the window to its default size based on command section visibility."""
+        screen = QApplication.primaryScreen().geometry()
+        
         if self.command_group.isVisible():
-             # if command group became visible and has content, ensure enough height
-             # Calculate minimum required height for all components
-             command_height = self.command_group.sizeHint().height()
-             feedback_height = self.feedback_group.minimumHeight()
-             button_height = self.toggle_command_button.sizeHint().height()
-             layout_spacing = self.centralWidget().layout().spacing() * 3  # 3 spacing areas
-             margins = self.centralWidget().layout().contentsMargins().top() + self.centralWidget().layout().contentsMargins().bottom()
-             
-             min_content_height = command_height + feedback_height + button_height + layout_spacing + margins + 30  # 30px extra padding
-             new_height = max(new_height, min_content_height, 600)  # Minimum 600px when command section is open
-
-        current_width = self.width()
-        self.resize(current_width, new_height)
+            # Default size when command section is visible: 800x600
+            default_width, default_height = 500, 900
+        else:
+            # Default size when command section is not visible: 500x500
+            default_width, default_height = 500, 500
+            
+        # Calculate center position
+        x = (screen.width() - default_width) // 2
+        y = (screen.height() - default_height) // 2
+        
+        # Resize and move window
+        self.resize(default_width, default_height)
+        self.move(x, y)
 
     def _update_config(self):
         self.config["run_command"] = self.command_entry.text()
@@ -773,6 +805,7 @@ class FeedbackUI(QMainWindow):
 
         return self.feedback_result
 
+
 def get_project_settings_group(project_dir: str) -> str:
     # Create a safe, unique group name from the project directory path
     # Using only the last component + hash of full path to keep it somewhat readable but unique
@@ -780,11 +813,12 @@ def get_project_settings_group(project_dir: str) -> str:
     full_hash = hashlib.md5(project_dir.encode('utf-8')).hexdigest()[:8]
     return f"{basename}_{full_hash}"
 
+
 def feedback_ui(project_directory: str, prompt: str, output_file: Optional[str] = None) -> Optional[FeedbackResult]:
     app = QApplication.instance() or QApplication()
     app.setPalette(get_dark_mode_palette(app))
     app.setStyle("Fusion")
-    
+
     ui = FeedbackUI(project_directory, prompt)
     result = ui.run()
 
@@ -798,10 +832,12 @@ def feedback_ui(project_directory: str, prompt: str, output_file: Optional[str] 
 
     return result
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the feedback UI")
     parser.add_argument("--project-directory", default=os.getcwd(), help="The project directory to run the command in")
-    parser.add_argument("--prompt", default="I implemented the changes you requested.", help="The prompt to show to the user")
+    parser.add_argument("--prompt", default="I implemented the changes you requested.",
+                        help="The prompt to show to the user")
     parser.add_argument("--output-file", help="Path to save the feedback result as JSON")
     args = parser.parse_args()
 
