@@ -665,7 +665,7 @@ class FeedbackUI(QMainWindow):
         screen = QApplication.primaryScreen().geometry()
         
         if self.command_group.isVisible():
-            # Default size when command section is visible: 800x600
+            # Default size when command section is visible: 900x500
             default_width, default_height = 500, 900
         else:
             # Default size when command section is not visible: 500x500
