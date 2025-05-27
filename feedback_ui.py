@@ -626,8 +626,8 @@ class FeedbackUI(QMainWindow):
         padding = self.feedback_text.contentsMargins().top() + self.feedback_text.contentsMargins().bottom() + 5  # 5 is extra vertical padding
         self.feedback_text.setMinimumHeight(3 * row_height + padding)
 
-        self.feedback_text.setPlaceholderText("Enter your feedback here (Ctrl+Enter to submit)")
-        submit_button = QPushButton("&Send Feedback (Ctrl+Enter)")
+        self.feedback_text.setPlaceholderText("Enter your feedback here (Cmd+Enter to submit)")
+        submit_button = QPushButton("&Send Feedback (Cmd+Enter)")
         submit_button.clicked.connect(self._submit_feedback)
 
         feedback_layout.addWidget(self.feedback_text)
