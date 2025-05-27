@@ -60,30 +60,234 @@ def set_dark_title_bar(widget: QWidget, dark_title_bar: bool) -> None:
     temp_widget.show()
     temp_widget.deleteLater()  # Safe deletion in Qt event loop
 
+# Modern color scheme constants
+PRIMARY_BG = QColor(24, 24, 27)      # Rich dark background
+SECONDARY_BG = QColor(39, 39, 42)    # Card/container background  
+ACCENT_BG = QColor(63, 63, 70)       # Hover/active states
+TEXT_PRIMARY = QColor(250, 250, 250) # Primary text
+TEXT_SECONDARY = QColor(161, 161, 170) # Secondary text
+TEXT_MUTED = QColor(113, 113, 122)   # Muted text
+ACCENT_COLOR = QColor(99, 102, 241)  # Indigo accent
+SUCCESS_COLOR = QColor(34, 197, 94)  # Green for success
+ERROR_COLOR = QColor(239, 68, 68)    # Red for errors
+
 def get_dark_mode_palette(app: QApplication):
     darkPalette = app.palette()
-    darkPalette.setColor(QPalette.Window, QColor(53, 53, 53))
-    darkPalette.setColor(QPalette.WindowText, Qt.white)
-    darkPalette.setColor(QPalette.Disabled, QPalette.WindowText, QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.Base, QColor(42, 42, 42))
-    darkPalette.setColor(QPalette.AlternateBase, QColor(66, 66, 66))
-    darkPalette.setColor(QPalette.ToolTipBase, QColor(53, 53, 53))
-    darkPalette.setColor(QPalette.ToolTipText, Qt.white)
-    darkPalette.setColor(QPalette.Text, Qt.white)
-    darkPalette.setColor(QPalette.Disabled, QPalette.Text, QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.Dark, QColor(35, 35, 35))
-    darkPalette.setColor(QPalette.Shadow, QColor(20, 20, 20))
-    darkPalette.setColor(QPalette.Button, QColor(53, 53, 53))
-    darkPalette.setColor(QPalette.ButtonText, Qt.white)
-    darkPalette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.BrightText, Qt.red)
-    darkPalette.setColor(QPalette.Link, QColor(42, 130, 218))
-    darkPalette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-    darkPalette.setColor(QPalette.Disabled, QPalette.Highlight, QColor(80, 80, 80))
-    darkPalette.setColor(QPalette.HighlightedText, Qt.white)
-    darkPalette.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor(127, 127, 127))
-    darkPalette.setColor(QPalette.PlaceholderText, QColor(127, 127, 127))
+    darkPalette.setColor(QPalette.Window, PRIMARY_BG)
+    darkPalette.setColor(QPalette.WindowText, TEXT_PRIMARY)
+    darkPalette.setColor(QPalette.Disabled, QPalette.WindowText, TEXT_MUTED)
+    darkPalette.setColor(QPalette.Base, SECONDARY_BG)
+    darkPalette.setColor(QPalette.AlternateBase, ACCENT_BG)
+    darkPalette.setColor(QPalette.ToolTipBase, PRIMARY_BG)
+    darkPalette.setColor(QPalette.ToolTipText, TEXT_PRIMARY)
+    darkPalette.setColor(QPalette.Text, TEXT_PRIMARY)
+    darkPalette.setColor(QPalette.Disabled, QPalette.Text, TEXT_MUTED)
+    darkPalette.setColor(QPalette.Dark, QColor(18, 18, 20))
+    darkPalette.setColor(QPalette.Shadow, QColor(0, 0, 0))
+    darkPalette.setColor(QPalette.Button, SECONDARY_BG)
+    darkPalette.setColor(QPalette.ButtonText, TEXT_PRIMARY)
+    darkPalette.setColor(QPalette.Disabled, QPalette.ButtonText, TEXT_MUTED)
+    darkPalette.setColor(QPalette.BrightText, ERROR_COLOR)
+    darkPalette.setColor(QPalette.Link, ACCENT_COLOR)
+    darkPalette.setColor(QPalette.Highlight, ACCENT_COLOR)
+    darkPalette.setColor(QPalette.Disabled, QPalette.Highlight, ACCENT_BG)
+    darkPalette.setColor(QPalette.HighlightedText, TEXT_PRIMARY)
+    darkPalette.setColor(QPalette.Disabled, QPalette.HighlightedText, TEXT_MUTED)
+    darkPalette.setColor(QPalette.PlaceholderText, TEXT_MUTED)
     return darkPalette
+
+def get_modern_stylesheet():
+    """Modern flat design stylesheet"""
+    return """
+    /* Main Window */
+    QMainWindow {
+        background-color: rgb(24, 24, 27);
+        color: rgb(250, 250, 250);
+    }
+    
+    /* Group Boxes - Card Style */
+    QGroupBox {
+        background-color: rgb(39, 39, 42);
+        border: 1px solid rgb(63, 63, 70);
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        color: rgb(250, 250, 250);
+        margin-top: 8px;
+        padding-top: 14px;
+    }
+    
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 12px;
+        padding: 0 8px 0 8px;
+        color: rgb(161, 161, 170);
+        background-color: transparent;
+    }
+    
+    /* Modern Buttons */
+    QPushButton {
+        background-color: rgb(99, 102, 241);
+        color: rgb(250, 250, 250);
+        border: none;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 14px;
+        font-weight: 500;
+        min-height: 28px;
+    }
+    
+    QPushButton:hover {
+        background-color: rgb(79, 70, 229);
+    }
+    
+    QPushButton:pressed {
+        background-color: rgb(67, 56, 202);
+    }
+    
+    QPushButton:disabled {
+        background-color: rgb(63, 63, 70);
+        color: rgb(113, 113, 122);
+    }
+    
+    /* Secondary Button Style */
+    QPushButton[class="secondary"] {
+        background-color: rgb(63, 63, 70);
+        color: rgb(250, 250, 250);
+    }
+    
+    QPushButton[class="secondary"]:hover {
+        background-color: rgb(82, 82, 91);
+    }
+    
+    QPushButton[class="secondary"]:pressed {
+        background-color: rgb(52, 52, 59);
+    }
+    
+    /* Input Fields */
+    QLineEdit {
+        background-color: rgb(24, 24, 27);
+        border: 1px solid rgb(63, 63, 70);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 14px;
+        color: rgb(250, 250, 250);
+        selection-background-color: rgb(99, 102, 241);
+    }
+    
+    QLineEdit:focus {
+        border: 2px solid rgb(99, 102, 241);
+        background-color: rgb(39, 39, 42);
+    }
+    
+    QLineEdit:disabled {
+        background-color: rgb(63, 63, 70);
+        color: rgb(113, 113, 122);
+    }
+    
+    /* Text Areas */
+    QTextEdit {
+        background-color: rgb(24, 24, 27);
+        border: 1px solid rgb(63, 63, 70);
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 15px;
+        color: rgb(250, 250, 250);
+        selection-background-color: rgb(99, 102, 241);
+        line-height: 1.4;
+    }
+    
+    QTextEdit:focus {
+        border: 2px solid rgb(99, 102, 241);
+        background-color: rgb(39, 39, 42);
+    }
+    
+    /* Checkboxes */
+    QCheckBox {
+        color: rgb(250, 250, 250);
+        font-size: 14px;
+        spacing: 6px;
+    }
+    
+    QCheckBox::indicator {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1px solid rgb(63, 63, 70);
+        background-color: rgb(24, 24, 27);
+    }
+    
+    QCheckBox::indicator:checked {
+        background-color: rgb(99, 102, 241);
+        border: 1px solid rgb(99, 102, 241);
+    }
+    
+    QCheckBox::indicator:checked:hover {
+        background-color: rgb(79, 70, 229);
+        border: 1px solid rgb(79, 70, 229);
+    }
+    
+    QCheckBox::indicator:hover {
+        border: 1px solid rgb(99, 102, 241);
+    }
+    
+    /* Labels */
+    QLabel {
+        color: rgb(250, 250, 250);
+        font-size: 14px;
+    }
+    
+    QLabel[class="muted"] {
+        color: rgb(161, 161, 170);
+        font-size: 13px;
+    }
+    
+    QLabel[class="description"] {
+        color: rgb(250, 250, 250);
+        font-size: 16px;
+        line-height: 1.5;
+    }
+    
+    QLabel[class="section-title"] {
+        color: rgb(161, 161, 170);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Scrollbars */
+    QScrollBar:vertical {
+        background-color: rgb(39, 39, 42);
+        width: 8px;
+        border-radius: 4px;
+        margin: 0;
+    }
+    
+    QScrollBar::handle:vertical {
+        background-color: rgb(63, 63, 70);
+        border-radius: 4px;
+        min-height: 20px;
+    }
+    
+    QScrollBar::handle:vertical:hover {
+        background-color: rgb(82, 82, 91);
+    }
+    
+    QScrollBar::add-line:vertical,
+    QScrollBar::sub-line:vertical {
+        height: 0px;
+    }
+    
+    /* Horizontal Layout Spacing */
+    QHBoxLayout {
+        spacing: 8px;
+    }
+    
+    QVBoxLayout {
+        spacing: 12px;
+    }
+    """
 
 def kill_tree(process: subprocess.Popen):
     killed: list[psutil.Process] = []
@@ -282,27 +486,42 @@ class FeedbackUI(QMainWindow):
         return path
 
     def _create_ui(self):
+        self.setWindowTitle("Interactive Feedback")
+        self.setMinimumSize(500, 500)
+        
+        # Apply modern stylesheet
+        self.setStyleSheet(get_modern_stylesheet())
+        
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(16)
 
         # Toggle Command Section Button
         self.toggle_command_button = QPushButton("Show Command Section")
+        self.toggle_command_button.setProperty("class", "secondary")
         self.toggle_command_button.clicked.connect(self._toggle_command_section)
         layout.addWidget(self.toggle_command_button)
 
         # Command section
         self.command_group = QGroupBox("Command")
         command_layout = QVBoxLayout(self.command_group)
+        command_layout.setSpacing(14)
+        command_layout.setContentsMargins(16, 18, 16, 16)
 
         # Working directory label
         formatted_path = self._format_windows_path(self.project_directory)
         working_dir_label = QLabel(f"Working directory: {formatted_path}")
+        working_dir_label.setProperty("class", "muted")
+        working_dir_label.setWordWrap(True)
         command_layout.addWidget(working_dir_label)
 
         # Command input row
         command_input_layout = QHBoxLayout()
+        command_input_layout.setSpacing(10)
         self.command_entry = QLineEdit()
+        self.command_entry.setPlaceholderText("Enter command to run (e.g., npm test, python script.py)")
         self.command_entry.setText(self.config["run_command"])
         self.command_entry.returnPressed.connect(self._run_command)
         self.command_entry.textChanged.connect(self._update_config)
@@ -320,6 +539,7 @@ class FeedbackUI(QMainWindow):
         self.auto_check.stateChanged.connect(self._update_config)
 
         save_button = QPushButton("&Save Configuration")
+        save_button.setProperty("class", "secondary")
         save_button.clicked.connect(self._save_config)
 
         auto_layout.addWidget(self.auto_check)
@@ -330,6 +550,8 @@ class FeedbackUI(QMainWindow):
         # Console section (now part of command_group)
         console_group = QGroupBox("Console")
         console_layout_internal = QVBoxLayout(console_group)
+        console_layout_internal.setSpacing(10)
+        console_layout_internal.setContentsMargins(14, 14, 14, 14)
         console_group.setMinimumHeight(200)
 
         # Log text area
@@ -343,6 +565,7 @@ class FeedbackUI(QMainWindow):
         # Clear button
         button_layout = QHBoxLayout()
         self.clear_button = QPushButton("&Clear")
+        self.clear_button.setProperty("class", "secondary")
         self.clear_button.clicked.connect(self.clear_logs)
         button_layout.addStretch()
         button_layout.addWidget(self.clear_button)
@@ -356,18 +579,27 @@ class FeedbackUI(QMainWindow):
         # Feedback section with adjusted height
         self.feedback_group = QGroupBox("Feedback")
         feedback_layout = QVBoxLayout(self.feedback_group)
+        feedback_layout.setSpacing(14)
+        feedback_layout.setContentsMargins(16, 18, 16, 16)
 
+        # Section title
+        section_title = QLabel("AI Assistant Summary")
+        section_title.setProperty("class", "section-title")
+        feedback_layout.addWidget(section_title)
+        
         # Short description label (from self.prompt)
         self.description_label = QLabel(self.prompt)
+        self.description_label.setProperty("class", "description")
         self.description_label.setWordWrap(True)
+        self.description_label.setContentsMargins(0, 0, 0, 10)  # Add bottom margin
         feedback_layout.addWidget(self.description_label)
 
         self.feedback_text = FeedbackTextEdit()
         font_metrics = self.feedback_text.fontMetrics()
         row_height = font_metrics.height()
-        # Calculate height for 5 lines + some padding for margins
+        # Calculate height for 3 lines + some padding for margins
         padding = self.feedback_text.contentsMargins().top() + self.feedback_text.contentsMargins().bottom() + 5 # 5 is extra vertical padding
-        self.feedback_text.setMinimumHeight(5 * row_height + padding)
+        self.feedback_text.setMinimumHeight(3 * row_height + padding)
 
         self.feedback_text.setPlaceholderText("Enter your feedback here (Ctrl+Enter to submit)")
         submit_button = QPushButton("&Send Feedback (Ctrl+Enter)")
@@ -377,22 +609,13 @@ class FeedbackUI(QMainWindow):
         feedback_layout.addWidget(submit_button)
 
         # Set minimum height for feedback_group to accommodate its contents
-        # This will be based on the description label and the 5-line feedback_text
-        self.feedback_group.setMinimumHeight(self.description_label.sizeHint().height() + self.feedback_text.minimumHeight() + submit_button.sizeHint().height() + feedback_layout.spacing() * 2 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10) # 10 for extra padding
+        # This will be based on the section title, description label and the 3-line feedback_text
+        self.feedback_group.setMinimumHeight(section_title.sizeHint().height() + self.description_label.sizeHint().height() + self.feedback_text.minimumHeight() + submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10) # 10 for extra padding
 
         # Add widgets in a specific order
         layout.addWidget(self.feedback_group)
 
-        # Credits/Contact Label
-        contact_label = QLabel('Need to improve? Contact Fábio Ferreira on <a href="https://x.com/fabiomlferreira">X.com</a> or visit <a href="https://dotcursorrules.com/">dotcursorrules.com</a>')
-        contact_label.setOpenExternalLinks(True)
-        contact_label.setAlignment(Qt.AlignCenter)
-        # Optionally, make font a bit smaller and less prominent
-        # contact_label_font = contact_label.font()
-        # contact_label_font.setPointSize(contact_label_font.pointSize() - 1)
-        # contact_label.setFont(contact_label_font)
-        contact_label.setStyleSheet("font-size: 9pt; color: #cccccc;") # Light gray for dark theme
-        layout.addWidget(contact_label)
+
 
     def _toggle_command_section(self):
         is_visible = self.command_group.isVisible()
@@ -409,10 +632,17 @@ class FeedbackUI(QMainWindow):
 
         # Adjust window height only
         new_height = self.centralWidget().sizeHint().height()
-        if self.command_group.isVisible() and self.command_group.layout().sizeHint().height() > 0 :
+        if self.command_group.isVisible():
              # if command group became visible and has content, ensure enough height
-             min_content_height = self.command_group.layout().sizeHint().height() + self.feedback_group.minimumHeight() + self.toggle_command_button.height() + layout().spacing() * 2
-             new_height = max(new_height, min_content_height)
+             # Calculate minimum required height for all components
+             command_height = self.command_group.sizeHint().height()
+             feedback_height = self.feedback_group.minimumHeight()
+             button_height = self.toggle_command_button.sizeHint().height()
+             layout_spacing = self.centralWidget().layout().spacing() * 3  # 3 spacing areas
+             margins = self.centralWidget().layout().contentsMargins().top() + self.centralWidget().layout().contentsMargins().bottom()
+             
+             min_content_height = command_height + feedback_height + button_height + layout_spacing + margins + 30  # 30px extra padding
+             new_height = max(new_height, min_content_height, 600)  # Minimum 600px when command section is open
 
         current_width = self.width()
         self.resize(current_width, new_height)
@@ -554,6 +784,7 @@ def feedback_ui(project_directory: str, prompt: str, output_file: Optional[str] 
     app = QApplication.instance() or QApplication()
     app.setPalette(get_dark_mode_palette(app))
     app.setStyle("Fusion")
+    
     ui = FeedbackUI(project_directory, prompt)
     result = ui.run()
 
