@@ -296,9 +296,9 @@ class FeedbackUI(QMainWindow):
     # Quick reply phrases for feedback
     QUICK_REPLIES = [
         "按计划继续",
-        "完全正确，任务完成",
+        "任务完成，输出`Task Progress`",
         "有小问题需要修正",
-        "缺少重要功能"
+        "结束请求"
     ]
 
     # Default window sizes (width, height)
