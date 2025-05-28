@@ -15,7 +15,7 @@ from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings
 from PySide6.QtGui import QTextCursor, QIcon, QKeyEvent, QFont, QFontDatabase, QPalette, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QCheckBox, QTextEdit, QGroupBox
+    QLabel, QLineEdit, QPushButton, QCheckBox, QTextEdit, QGroupBox, QGridLayout
 )
 
 
@@ -207,6 +207,27 @@ def get_modern_stylesheet():
         background-color: rgb(52, 52, 59);
     }
     
+    /* Quick Reply Button Style */
+    QPushButton[class="quick-reply"] {
+        background-color: rgb(82, 82, 91);
+        color: rgb(250, 250, 250);
+        border: none;
+        border-radius: 12px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 400;
+        min-height: 20px;
+        max-height: 24px;
+    }
+    
+    QPushButton[class="quick-reply"]:hover {
+        background-color: rgb(99, 102, 241);
+    }
+    
+    QPushButton[class="quick-reply"]:pressed {
+        background-color: rgb(79, 70, 229);
+    }
+    
     /* Input Fields */
     QLineEdit {
         background-color: rgb(24, 24, 27);
@@ -274,6 +295,26 @@ def get_modern_stylesheet():
         border: 1px solid rgb(99, 102, 241);
     }
     
+    /* Small Checkbox Style */
+    QCheckBox[class="small-checkbox"] {
+        color: rgb(161, 161, 170);
+        font-size: 11px;
+        spacing: 4px;
+    }
+    
+    QCheckBox[class="small-checkbox"]::indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        border: 1px solid rgb(63, 63, 70);
+        background-color: rgb(24, 24, 27);
+    }
+    
+    QCheckBox[class="small-checkbox"]::indicator:checked {
+        background-color: rgb(99, 102, 241);
+        border: 1px solid rgb(99, 102, 241);
+    }
+    
     /* Labels */
     QLabel {
         color: rgb(250, 250, 250);
@@ -288,7 +329,7 @@ def get_modern_stylesheet():
     QLabel[class="description"] {
         color: rgb(250, 250, 250);
         font-size: 16px;
-        line-height: 1.5;
+        line-height: 1.7;
     }
     
     QLabel[class="section-title"] {
@@ -297,6 +338,17 @@ def get_modern_stylesheet():
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+    }
+    
+    QLabel[class="quick-reply-text"] {
+        color: rgb(99, 102, 241);
+        font-size: 12px;
+        cursor: pointer;
+    }
+    
+    QLabel[class="quick-reply-text"]:hover {
+        color: rgb(129, 140, 248);
+        text-decoration: underline;
     }
     
     /* Scrollbars */
@@ -401,6 +453,29 @@ def get_light_stylesheet():
         background-color: rgb(148, 163, 184);
     }
     
+    /* Quick Reply Button Style */
+    QPushButton[class="quick-reply"] {
+        background-color: rgb(203, 213, 225);
+        color: rgb(15, 23, 42);
+        border: none;
+        border-radius: 12px;
+        padding: 4px 8px;
+        font-size: 11px;
+        font-weight: 400;
+        min-height: 20px;
+        max-height: 24px;
+    }
+    
+    QPushButton[class="quick-reply"]:hover {
+        background-color: rgb(99, 102, 241);
+        color: rgb(255, 255, 255);
+    }
+    
+    QPushButton[class="quick-reply"]:pressed {
+        background-color: rgb(79, 70, 229);
+        color: rgb(255, 255, 255);
+    }
+    
     /* Input Fields */
     QLineEdit {
         background-color: rgb(255, 255, 255);
@@ -468,6 +543,26 @@ def get_light_stylesheet():
         border: 1px solid rgb(99, 102, 241);
     }
     
+    /* Small Checkbox Style */
+    QCheckBox[class="small-checkbox"] {
+        color: rgb(15, 23, 42);
+        font-size: 11px;
+        spacing: 4px;
+    }
+    
+    QCheckBox[class="small-checkbox"]::indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        border: 1px solid rgb(226, 232, 240);
+        background-color: rgb(255, 255, 255);
+    }
+    
+    QCheckBox[class="small-checkbox"]::indicator:checked {
+        background-color: rgb(99, 102, 241);
+        border: 1px solid rgb(99, 102, 241);
+    }
+    
     /* Labels */
     QLabel {
         color: rgb(15, 23, 42);
@@ -482,7 +577,7 @@ def get_light_stylesheet():
     QLabel[class="description"] {
         color: rgb(15, 23, 42);
         font-size: 16px;
-        line-height: 1.5;
+        line-height: 1.7;
     }
     
     QLabel[class="section-title"] {
@@ -491,6 +586,17 @@ def get_light_stylesheet():
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
+    }
+    
+    QLabel[class="quick-reply-text"] {
+        color: rgb(99, 102, 241);
+        font-size: 12px;
+        cursor: pointer;
+    }
+    
+    QLabel[class="quick-reply-text"]:hover {
+        color: rgb(129, 140, 248);
+        text-decoration: underline;
     }
     
     /* Scrollbars */
@@ -656,6 +762,14 @@ class LogSignals(QObject):
 
 
 class FeedbackUI(QMainWindow):
+    # Quick reply phrases for feedback
+    QUICK_REPLIES = [
+        "看起来不错，按计划继续",
+        "完全正确，任务完成", 
+        "有小问题需要修正",
+        "缺少重要功能"
+    ]
+    
     def __init__(self, project_directory: str, prompt: str):
         super().__init__()
         self.project_directory = project_directory
@@ -681,9 +795,9 @@ class FeedbackUI(QMainWindow):
         if geometry:
             self.restoreGeometry(geometry)
         else:
-            self.resize(800, 600)
+            self.resize(500, 600)
             screen = QApplication.primaryScreen().geometry()
-            x = (screen.width() - 800) // 2
+            x = (screen.width() - 500) // 2
             y = (screen.height() - 600) // 2
             self.move(x, y)
         state = self.settings.value("windowState")
@@ -864,7 +978,7 @@ class FeedbackUI(QMainWindow):
         self.description_label = QLabel(self.prompt)
         self.description_label.setProperty("class", "description")
         self.description_label.setWordWrap(True)
-        self.description_label.setContentsMargins(0, 0, 0, 10)  # Add bottom margin
+        self.description_label.setContentsMargins(0, 0, 0, 12)  # Add bottom margin
         feedback_layout.addWidget(self.description_label)
 
         self.feedback_text = FeedbackTextEdit()
@@ -875,10 +989,54 @@ class FeedbackUI(QMainWindow):
         self.feedback_text.setMinimumHeight(3 * row_height + padding)
 
         self.feedback_text.setPlaceholderText("Enter your feedback here (Cmd+Enter to submit)")
+        
+        # Quick reply text links
+        quick_reply_container = QVBoxLayout()
+        quick_reply_container.setSpacing(6)
+        quick_reply_container.setContentsMargins(0, 8, 0, 4)  # Add top and bottom margin
+        
+        # Add quick reply label with auto-submit checkbox
+        quick_header_layout = QHBoxLayout()
+        quick_header_layout.setSpacing(8)
+        
+        quick_label = QLabel("Quick Reply:")
+        quick_label.setProperty("class", "muted")
+        quick_header_layout.addWidget(quick_label)
+        
+        self.auto_submit_check = QCheckBox("Auto Submit")
+        self.auto_submit_check.setChecked(True)  # Default to auto-submit
+        self.auto_submit_check.setProperty("class", "small-checkbox")
+        quick_header_layout.addWidget(self.auto_submit_check)
+        
+        quick_header_layout.addStretch()
+        quick_reply_container.addLayout(quick_header_layout)
+        
+        # Create quick reply text links in grid layout (2 per row)
+        quick_grid = QGridLayout()
+        quick_grid.setSpacing(4)
+        quick_grid.setVerticalSpacing(2)
+        
+        for i, reply_text in enumerate(self.QUICK_REPLIES):
+            quick_label = QLabel(f"• {reply_text}")
+            quick_label.setProperty("class", "quick-reply-text")
+            
+            # Create a proper click handler to avoid closure issues
+            def make_click_handler(text):
+                return lambda event: self._quick_reply_clicked(text)
+            
+            quick_label.mousePressEvent = make_click_handler(reply_text)
+            
+            row = i // 2
+            col = i % 2
+            quick_grid.addWidget(quick_label, row, col)
+        
+        quick_reply_container.addLayout(quick_grid)
+        
         submit_button = QPushButton("&Send Feedback (Cmd+Enter)")
         submit_button.clicked.connect(self._submit_feedback)
 
         feedback_layout.addWidget(self.feedback_text)
+        feedback_layout.addLayout(quick_reply_container)
         feedback_layout.addWidget(submit_button)
 
         # Set minimum height for feedback_group to accommodate its contents
@@ -917,11 +1075,11 @@ class FeedbackUI(QMainWindow):
         screen = QApplication.primaryScreen().geometry()
         
         if self.command_group.isVisible():
-            # Default size when command section is visible: 900x500
-            default_width, default_height = 500, 900
+            # Default size when command section is visible: 1000x500
+            default_width, default_height = 500, 1000
         else:
-            # Default size when command section is not visible: 500x500
-            default_width, default_height = 500, 500
+            # Default size when command section is not visible: 600x500
+            default_width, default_height = 500, 600
             
         # Calculate center position
         x = (screen.width() - default_width) // 2
@@ -1119,6 +1277,12 @@ class FeedbackUI(QMainWindow):
             interactive_feedback=self.feedback_text.toPlainText().strip(),
         )
         self.close()
+
+    def _quick_reply_clicked(self, reply_text: str):
+        """Handle quick reply text click - set text and optionally submit."""
+        self.feedback_text.setPlainText(reply_text)
+        if self.auto_submit_check.isChecked():
+            self._submit_feedback()
 
     def clear_logs(self):
         self.log_buffer = []
