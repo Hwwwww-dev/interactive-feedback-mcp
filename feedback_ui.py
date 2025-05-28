@@ -75,6 +75,17 @@ ACCENT_COLOR = QColor(99, 102, 241)  # Indigo accent
 SUCCESS_COLOR = QColor(34, 197, 94)  # Green for success
 ERROR_COLOR = QColor(239, 68, 68)  # Red for errors
 
+# Light theme color constants
+LIGHT_PRIMARY_BG = QColor(255, 255, 255)  # Pure white background
+LIGHT_SECONDARY_BG = QColor(248, 250, 252)  # Light gray card background
+LIGHT_ACCENT_BG = QColor(226, 232, 240)  # Light hover/active states
+LIGHT_TEXT_PRIMARY = QColor(15, 23, 42)  # Dark text for contrast
+LIGHT_TEXT_SECONDARY = QColor(71, 85, 105)  # Medium gray text
+LIGHT_TEXT_MUTED = QColor(148, 163, 184)  # Light gray muted text
+LIGHT_ACCENT_COLOR = QColor(99, 102, 241)  # Same indigo accent
+LIGHT_SUCCESS_COLOR = QColor(34, 197, 94)  # Same green
+LIGHT_ERROR_COLOR = QColor(239, 68, 68)  # Same red
+
 
 def get_dark_mode_palette(app: QApplication):
     darkPalette = app.palette()
@@ -100,6 +111,32 @@ def get_dark_mode_palette(app: QApplication):
     darkPalette.setColor(QPalette.Disabled, QPalette.HighlightedText, TEXT_MUTED)
     darkPalette.setColor(QPalette.PlaceholderText, TEXT_MUTED)
     return darkPalette
+
+
+def get_light_mode_palette(app: QApplication):
+    lightPalette = app.palette()
+    lightPalette.setColor(QPalette.Window, LIGHT_PRIMARY_BG)
+    lightPalette.setColor(QPalette.WindowText, LIGHT_TEXT_PRIMARY)
+    lightPalette.setColor(QPalette.Disabled, QPalette.WindowText, LIGHT_TEXT_MUTED)
+    lightPalette.setColor(QPalette.Base, LIGHT_SECONDARY_BG)
+    lightPalette.setColor(QPalette.AlternateBase, LIGHT_ACCENT_BG)
+    lightPalette.setColor(QPalette.ToolTipBase, LIGHT_PRIMARY_BG)
+    lightPalette.setColor(QPalette.ToolTipText, LIGHT_TEXT_PRIMARY)
+    lightPalette.setColor(QPalette.Text, LIGHT_TEXT_PRIMARY)
+    lightPalette.setColor(QPalette.Disabled, QPalette.Text, LIGHT_TEXT_MUTED)
+    lightPalette.setColor(QPalette.Dark, QColor(200, 200, 200))
+    lightPalette.setColor(QPalette.Shadow, QColor(150, 150, 150))
+    lightPalette.setColor(QPalette.Button, LIGHT_SECONDARY_BG)
+    lightPalette.setColor(QPalette.ButtonText, LIGHT_TEXT_PRIMARY)
+    lightPalette.setColor(QPalette.Disabled, QPalette.ButtonText, LIGHT_TEXT_MUTED)
+    lightPalette.setColor(QPalette.BrightText, LIGHT_ERROR_COLOR)
+    lightPalette.setColor(QPalette.Link, LIGHT_ACCENT_COLOR)
+    lightPalette.setColor(QPalette.Highlight, LIGHT_ACCENT_COLOR)
+    lightPalette.setColor(QPalette.Disabled, QPalette.Highlight, LIGHT_ACCENT_BG)
+    lightPalette.setColor(QPalette.HighlightedText, LIGHT_TEXT_PRIMARY)
+    lightPalette.setColor(QPalette.Disabled, QPalette.HighlightedText, LIGHT_TEXT_MUTED)
+    lightPalette.setColor(QPalette.PlaceholderText, LIGHT_TEXT_MUTED)
+    return lightPalette
 
 
 def get_modern_stylesheet():
@@ -296,6 +333,200 @@ def get_modern_stylesheet():
     """
 
 
+def get_light_stylesheet():
+    """Modern flat design stylesheet for light theme"""
+    return """
+    /* Main Window */
+    QMainWindow {
+        background-color: rgb(255, 255, 255);
+        color: rgb(15, 23, 42);
+    }
+    
+    /* Group Boxes - Card Style */
+    QGroupBox {
+        background-color: rgb(248, 250, 252);
+        border: 1px solid rgb(226, 232, 240);
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        color: rgb(15, 23, 42);
+        margin-top: 8px;
+        padding-top: 14px;
+    }
+    
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 12px;
+        padding: 0 8px 0 8px;
+        color: rgb(71, 85, 105);
+        background-color: transparent;
+    }
+    
+    /* Modern Buttons */
+    QPushButton {
+        background-color: rgb(99, 102, 241);
+        color: rgb(255, 255, 255);
+        border: none;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 14px;
+        font-weight: 500;
+        min-height: 28px;
+    }
+    
+    QPushButton:hover {
+        background-color: rgb(79, 70, 229);
+    }
+    
+    QPushButton:pressed {
+        background-color: rgb(67, 56, 202);
+    }
+    
+    QPushButton:disabled {
+        background-color: rgb(226, 232, 240);
+        color: rgb(148, 163, 184);
+    }
+    
+    /* Secondary Button Style */
+    QPushButton[class="secondary"] {
+        background-color: rgb(226, 232, 240);
+        color: rgb(15, 23, 42);
+    }
+    
+    QPushButton[class="secondary"]:hover {
+        background-color: rgb(203, 213, 225);
+    }
+    
+    QPushButton[class="secondary"]:pressed {
+        background-color: rgb(148, 163, 184);
+    }
+    
+    /* Input Fields */
+    QLineEdit {
+        background-color: rgb(255, 255, 255);
+        border: 1px solid rgb(226, 232, 240);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 14px;
+        color: rgb(15, 23, 42);
+        selection-background-color: rgb(99, 102, 241);
+    }
+    
+    QLineEdit:focus {
+        border: 2px solid rgb(99, 102, 241);
+        background-color: rgb(248, 250, 252);
+    }
+    
+    QLineEdit:disabled {
+        background-color: rgb(248, 250, 252);
+        color: rgb(148, 163, 184);
+    }
+    
+    /* Text Areas */
+    QTextEdit {
+        background-color: rgb(255, 255, 255);
+        border: 1px solid rgb(226, 232, 240);
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 15px;
+        color: rgb(15, 23, 42);
+        selection-background-color: rgb(99, 102, 241);
+        line-height: 1.4;
+    }
+    
+    QTextEdit:focus {
+        border: 2px solid rgb(99, 102, 241);
+        background-color: rgb(248, 250, 252);
+    }
+    
+    /* Checkboxes */
+    QCheckBox {
+        color: rgb(15, 23, 42);
+        font-size: 14px;
+        spacing: 6px;
+    }
+    
+    QCheckBox::indicator {
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        border: 1px solid rgb(226, 232, 240);
+        background-color: rgb(255, 255, 255);
+    }
+    
+    QCheckBox::indicator:checked {
+        background-color: rgb(99, 102, 241);
+        border: 1px solid rgb(99, 102, 241);
+    }
+    
+    QCheckBox::indicator:checked:hover {
+        background-color: rgb(79, 70, 229);
+        border: 1px solid rgb(79, 70, 229);
+    }
+    
+    QCheckBox::indicator:hover {
+        border: 1px solid rgb(99, 102, 241);
+    }
+    
+    /* Labels */
+    QLabel {
+        color: rgb(15, 23, 42);
+        font-size: 14px;
+    }
+    
+    QLabel[class="muted"] {
+        color: rgb(71, 85, 105);
+        font-size: 13px;
+    }
+    
+    QLabel[class="description"] {
+        color: rgb(15, 23, 42);
+        font-size: 16px;
+        line-height: 1.5;
+    }
+    
+    QLabel[class="section-title"] {
+        color: rgb(71, 85, 105);
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Scrollbars */
+    QScrollBar:vertical {
+        background-color: rgb(248, 250, 252);
+        width: 8px;
+        border-radius: 4px;
+        margin: 0;
+    }
+    
+    QScrollBar::handle:vertical {
+        background-color: rgb(226, 232, 240);
+        border-radius: 4px;
+        min-height: 20px;
+    }
+    
+    QScrollBar::handle:vertical:hover {
+        background-color: rgb(203, 213, 225);
+    }
+    
+    QScrollBar::add-line:vertical,
+    QScrollBar::sub-line:vertical {
+        height: 0px;
+    }
+    
+    /* Horizontal Layout Spacing */
+    QHBoxLayout {
+        spacing: 8px;
+    }
+    
+    QVBoxLayout {
+        spacing: 12px;
+    }
+    """
+
+
 def kill_tree(process: subprocess.Popen):
     killed: list[psutil.Process] = []
     parent = psutil.Process(process.pid)
@@ -441,9 +672,9 @@ class FeedbackUI(QMainWindow):
         icon_path = os.path.join(script_dir, "images", "feedback.png")
         self.setWindowIcon(QIcon(icon_path))
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
-
+        
         self.settings = QSettings("InteractiveFeedbackMCP", "InteractiveFeedbackMCP")
-
+        
         # Load general UI settings for the main window (geometry, state)
         self.settings.beginGroup("MainWindow_General")
         geometry = self.settings.value("geometry")
@@ -459,7 +690,7 @@ class FeedbackUI(QMainWindow):
         if state:
             self.restoreState(state)
         self.settings.endGroup()  # End "MainWindow_General" group
-
+        
         # Load project-specific settings (command, auto-execute, command section visibility)
         self.project_group_name = get_project_settings_group(self.project_directory)
         self.settings.beginGroup(self.project_group_name)
@@ -467,11 +698,15 @@ class FeedbackUI(QMainWindow):
         loaded_execute_auto = self.settings.value("execute_automatically", False, type=bool)
         command_section_visible = self.settings.value("commandSectionVisible", False, type=bool)
         self.settings.endGroup()  # End project-specific group
-
+        
         self.config: FeedbackConfig = {
             "run_command": loaded_run_command,
             "execute_automatically": loaded_execute_auto
         }
+
+        # Theme management
+        self.theme_mode = self.settings.value("theme/mode", "auto", type=str)  # "auto", "dark", "light"
+        self.is_dark_theme = self._get_effective_theme()
 
         self._create_ui()  # self.config is used here to set initial values
 
@@ -480,7 +715,13 @@ class FeedbackUI(QMainWindow):
         if command_section_visible:
             self.toggle_command_button.setText("Hide Command Section")
         else:
-            self.toggle_command_button.setText("Show Command Section")
+            self.toggle_command_button.setText("Command Section")
+
+        # Start theme monitoring timer for auto mode
+        self.theme_timer = QTimer()
+        self.theme_timer.timeout.connect(self._check_system_theme_change)
+        if self.theme_mode == "auto":
+            self.theme_timer.start(3000)  # Check every 3 seconds only in auto mode
 
         set_dark_title_bar(self, True)
 
@@ -499,10 +740,10 @@ class FeedbackUI(QMainWindow):
     def _create_ui(self):
         self.setWindowTitle("Interactive Feedback")
         self.setMinimumSize(500, 500)
-
+        
         # Apply modern stylesheet
         self.setStyleSheet(get_modern_stylesheet())
-
+        
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         layout = QVBoxLayout(central_widget)
@@ -513,8 +754,8 @@ class FeedbackUI(QMainWindow):
         buttons_layout = QHBoxLayout()
         buttons_layout.setSpacing(10)
         
-        # Toggle Command Section Button (80% width)
-        self.toggle_command_button = QPushButton("Show Command Section")
+        # Toggle Command Section Button (70% width)
+        self.toggle_command_button = QPushButton("Command Plan'e")
         self.toggle_command_button.setProperty("class", "secondary")
         self.toggle_command_button.clicked.connect(self._toggle_command_section)
         
@@ -523,9 +764,16 @@ class FeedbackUI(QMainWindow):
         self.restore_size_button.setProperty("class", "secondary")
         self.restore_size_button.clicked.connect(self.restore_default_window_size)
         
-        # Add buttons to layout with 8:2 ratio
-        buttons_layout.addWidget(self.toggle_command_button, 9)
-        buttons_layout.addWidget(self.restore_size_button, 1)
+        # Theme Toggle Button (10% width)
+        theme_icon = "🔄" if self.theme_mode == "auto" else ("🌙" if self.theme_mode == "dark" else "☀️")
+        self.theme_toggle_button = QPushButton(theme_icon)
+        self.theme_toggle_button.setProperty("class", "secondary")
+        self.theme_toggle_button.clicked.connect(self.toggle_theme)
+        
+        # Add buttons to layout with 7:2:1 ratio
+        buttons_layout.addWidget(self.toggle_command_button, 7)
+        buttons_layout.addWidget(self.restore_size_button, 2)
+        buttons_layout.addWidget(self.theme_toggle_button, 1)
         
         layout.addLayout(buttons_layout)
 
@@ -641,6 +889,10 @@ class FeedbackUI(QMainWindow):
         # Add widgets in a specific order
         layout.addWidget(self.feedback_group)
 
+        
+        # Apply the theme after all widgets are created
+        self.apply_theme()
+
     def _toggle_command_section(self):
         is_visible = self.command_group.isVisible()
         self.command_group.setVisible(not is_visible)
@@ -649,7 +901,7 @@ class FeedbackUI(QMainWindow):
             # When command section becomes visible, call restore_default_window_size method
             self.restore_default_window_size()
         else:
-            self.toggle_command_button.setText("Show Command Section")
+            self.toggle_command_button.setText("Command Section")
             # When closing command section, only adjust window size
             new_height = self.centralWidget().sizeHint().height()
             current_width = self.width()
@@ -679,9 +931,112 @@ class FeedbackUI(QMainWindow):
         self.resize(default_width, default_height)
         self.move(x, y)
 
+    def apply_theme(self, is_dark=None):
+        """Apply the specified theme (dark or light) to the UI."""
+        if is_dark is None:
+            is_dark = self.is_dark_theme
+        
+        app = QApplication.instance()
+        if is_dark:
+            app.setPalette(get_dark_mode_palette(app))
+            self.setStyleSheet(get_modern_stylesheet())
+        else:
+            app.setPalette(get_light_mode_palette(app))
+            self.setStyleSheet(get_light_stylesheet())
+        
+        self.is_dark_theme = is_dark
+        
+        # Update theme toggle button text
+        if hasattr(self, 'theme_toggle_button'):
+            if self.theme_mode == "auto":
+                self.theme_toggle_button.setText("🔄")
+            elif self.theme_mode == "dark":
+                self.theme_toggle_button.setText("🌙")
+            else:  # light
+                self.theme_toggle_button.setText("☀️")
+
+    def toggle_theme(self):
+        """Cycle through auto, dark, and light theme modes."""
+        if self.theme_mode == "auto":
+            self.theme_mode = "dark"
+        elif self.theme_mode == "dark":
+            self.theme_mode = "light"
+        else:  # light
+            self.theme_mode = "auto"
+        
+        # Update effective theme and apply
+        self.is_dark_theme = self._get_effective_theme()
+        self.apply_theme()
+        
+        # Save theme preference
+        self.settings.setValue("theme/mode", self.theme_mode)
+        
+        # Start or stop theme monitoring based on mode
+        if hasattr(self, 'theme_timer'):
+            if self.theme_mode == "auto":
+                if not self.theme_timer.isActive():
+                    self.theme_timer.start(3000)
+            else:
+                self.theme_timer.stop()
+
     def _update_config(self):
         self.config["run_command"] = self.command_entry.text()
         self.config["execute_automatically"] = self.auto_check.isChecked()
+
+    def _get_system_theme_is_dark(self) -> bool:
+        """Detect if system is using dark theme."""
+        try:
+            if sys.platform == "darwin":  # macOS
+                # Try multiple methods for macOS
+                try:
+                    # Method 1: Check AppleInterfaceStyle
+                    result = subprocess.run(
+                        ["defaults", "read", "-g", "AppleInterfaceStyle"],
+                        capture_output=True,
+                        text=True,
+                        timeout=2
+                    )
+                    if result.returncode == 0 and "Dark" in result.stdout.strip():
+                        return True
+                except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                    pass
+                
+                try:
+                    # Method 2: Check using osascript (AppleScript)
+                    result = subprocess.run([
+                        "osascript", "-e", 
+                        "tell application \"System Events\" to tell appearance preferences to get dark mode"
+                    ], capture_output=True, text=True, timeout=2)
+                    if result.returncode == 0:
+                        return result.stdout.strip().lower() == "true"
+                except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+                    pass
+                
+                # Default to light theme if detection fails
+                return False
+                
+            elif sys.platform == "win32":  # Windows
+                import winreg
+                try:
+                    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                                       r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize") as key:
+                        value = winreg.QueryValueEx(key, "AppsUseLightTheme")[0]
+                        return value == 0  # 0 means dark theme
+                except (FileNotFoundError, OSError):
+                    return False
+            else:  # Linux and others
+                return False  # Default to light theme
+        except Exception:
+            return False  # Default to light theme if detection fails
+
+    def _get_effective_theme(self) -> bool:
+        """Get the effective theme based on current mode."""
+        if self.theme_mode == "auto":
+            return self._get_system_theme_is_dark()
+        elif self.theme_mode == "dark":
+            return True
+        else:  # light
+            return False
 
     def _append_log(self, text: str):
         self.log_buffer.append(text)
@@ -789,6 +1144,11 @@ class FeedbackUI(QMainWindow):
         self.settings.setValue("commandSectionVisible", self.command_group.isVisible())
         self.settings.endGroup()
 
+        # Stop theme monitoring timer to prevent memory leaks
+        if hasattr(self, 'theme_timer'):
+            self.theme_timer.stop()
+            self.theme_timer.deleteLater()
+
         if self.process:
             kill_tree(self.process)
         super().closeEvent(event)
@@ -805,6 +1165,14 @@ class FeedbackUI(QMainWindow):
 
         return self.feedback_result
 
+    def _check_system_theme_change(self):
+        """Check if system theme has changed and update if in auto mode."""
+        if self.theme_mode == "auto":
+            current_system_dark = self._get_system_theme_is_dark()
+            if current_system_dark != self.is_dark_theme:
+                self.is_dark_theme = current_system_dark
+                self.apply_theme()
+
 
 def get_project_settings_group(project_dir: str) -> str:
     # Create a safe, unique group name from the project directory path
@@ -816,9 +1184,8 @@ def get_project_settings_group(project_dir: str) -> str:
 
 def feedback_ui(project_directory: str, prompt: str, output_file: Optional[str] = None) -> Optional[FeedbackResult]:
     app = QApplication.instance() or QApplication()
-    app.setPalette(get_dark_mode_palette(app))
     app.setStyle("Fusion")
-
+    
     ui = FeedbackUI(project_directory, prompt)
     result = ui.run()
 
