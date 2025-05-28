@@ -760,19 +760,19 @@ class FeedbackUI(QMainWindow):
         self.toggle_command_button.clicked.connect(self._toggle_command_section)
         
         # Restore Default Size Button (20% width)
-        self.restore_size_button = QPushButton("Reset Size")
+        self.restore_size_button = QPushButton("🔄")
         self.restore_size_button.setProperty("class", "secondary")
         self.restore_size_button.clicked.connect(self.restore_default_window_size)
         
         # Theme Toggle Button (10% width)
-        theme_icon = "🔄" if self.theme_mode == "auto" else ("🌙" if self.theme_mode == "dark" else "☀️")
+        theme_icon = "💻" if self.theme_mode == "auto" else ("🌙" if self.theme_mode == "dark" else "☀️")
         self.theme_toggle_button = QPushButton(theme_icon)
         self.theme_toggle_button.setProperty("class", "secondary")
         self.theme_toggle_button.clicked.connect(self.toggle_theme)
         
         # Add buttons to layout with 7:2:1 ratio
-        buttons_layout.addWidget(self.toggle_command_button, 7)
-        buttons_layout.addWidget(self.restore_size_button, 2)
+        buttons_layout.addWidget(self.toggle_command_button, 8)
+        buttons_layout.addWidget(self.restore_size_button, 1)
         buttons_layout.addWidget(self.theme_toggle_button, 1)
         
         layout.addLayout(buttons_layout)
@@ -949,7 +949,7 @@ class FeedbackUI(QMainWindow):
         # Update theme toggle button text
         if hasattr(self, 'theme_toggle_button'):
             if self.theme_mode == "auto":
-                self.theme_toggle_button.setText("🔄")
+                self.theme_toggle_button.setText("💻")
             elif self.theme_mode == "dark":
                 self.theme_toggle_button.setText("🌙")
             else:  # light
