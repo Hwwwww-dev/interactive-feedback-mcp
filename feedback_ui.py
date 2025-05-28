@@ -746,7 +746,8 @@ class FeedbackTextEdit(QTextEdit):
         super().__init__(parent)
 
     def keyPressEvent(self, event: QKeyEvent):
-        if event.key() == Qt.Key_Return and event.modifiers() == Qt.ControlModifier:
+        if (event.key() == Qt.Key_Return and event.modifiers() == Qt.ControlModifier) or \
+           (event.key() == Qt.Key_Return and event.modifiers() == Qt.ShiftModifier):
             # Find the parent FeedbackUI instance and call submit
             parent = self.parent()
             while parent and not isinstance(parent, FeedbackUI):
@@ -764,7 +765,7 @@ class LogSignals(QObject):
 class FeedbackUI(QMainWindow):
     # Quick reply phrases for feedback
     QUICK_REPLIES = [
-        "看起来不错，按计划继续",
+        "按计划继续",
         "完全正确，任务完成", 
         "有小问题需要修正",
         "缺少重要功能"
@@ -1032,7 +1033,7 @@ class FeedbackUI(QMainWindow):
         
         quick_reply_container.addLayout(quick_grid)
         
-        submit_button = QPushButton("&Send Feedback (Cmd+Enter)")
+        submit_button = QPushButton("&Send Feedback (⌘+⏎ / ⇧+⏎)")
         submit_button.clicked.connect(self._submit_feedback)
 
         feedback_layout.addWidget(self.feedback_text)
