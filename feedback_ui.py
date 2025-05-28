@@ -141,496 +141,26 @@ def get_light_mode_palette(app: QApplication):
 
 def get_modern_stylesheet():
     """Modern flat design stylesheet"""
-    return """
-    /* Main Window */
-    QMainWindow {
-        background-color: rgb(24, 24, 27);
-        color: rgb(250, 250, 250);
-    }
-    
-    /* Group Boxes - Card Style */
-    QGroupBox {
-        background-color: rgb(39, 39, 42);
-        border: 1px solid rgb(63, 63, 70);
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 600;
-        color: rgb(250, 250, 250);
-        margin-top: 8px;
-        padding-top: 14px;
-    }
-    
-    QGroupBox::title {
-        subcontrol-origin: margin;
-        left: 12px;
-        padding: 0 8px 0 8px;
-        color: rgb(161, 161, 170);
-        background-color: transparent;
-    }
-    
-    /* Modern Buttons */
-    QPushButton {
-        background-color: rgb(99, 102, 241);
-        color: rgb(250, 250, 250);
-        border: none;
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-size: 14px;
-        font-weight: 500;
-        min-height: 28px;
-    }
-    
-    QPushButton:hover {
-        background-color: rgb(79, 70, 229);
-    }
-    
-    QPushButton:pressed {
-        background-color: rgb(67, 56, 202);
-    }
-    
-    QPushButton:disabled {
-        background-color: rgb(63, 63, 70);
-        color: rgb(113, 113, 122);
-    }
-    
-    /* Secondary Button Style */
-    QPushButton[class="secondary"] {
-        background-color: rgb(63, 63, 70);
-        color: rgb(250, 250, 250);
-    }
-    
-    QPushButton[class="secondary"]:hover {
-        background-color: rgb(82, 82, 91);
-    }
-    
-    QPushButton[class="secondary"]:pressed {
-        background-color: rgb(52, 52, 59);
-    }
-    
-    /* Quick Reply Button Style */
-    QPushButton[class="quick-reply"] {
-        background-color: rgb(82, 82, 91);
-        color: rgb(250, 250, 250);
-        border: none;
-        border-radius: 12px;
-        padding: 4px 8px;
-        font-size: 11px;
-        font-weight: 400;
-        min-height: 20px;
-        max-height: 24px;
-    }
-    
-    QPushButton[class="quick-reply"]:hover {
-        background-color: rgb(99, 102, 241);
-    }
-    
-    QPushButton[class="quick-reply"]:pressed {
-        background-color: rgb(79, 70, 229);
-    }
-    
-    /* Input Fields */
-    QLineEdit {
-        background-color: rgb(24, 24, 27);
-        border: 1px solid rgb(63, 63, 70);
-        border-radius: 6px;
-        padding: 6px 10px;
-        font-size: 14px;
-        color: rgb(250, 250, 250);
-        selection-background-color: rgb(99, 102, 241);
-    }
-    
-    QLineEdit:focus {
-        border: 2px solid rgb(99, 102, 241);
-        background-color: rgb(39, 39, 42);
-    }
-    
-    QLineEdit:disabled {
-        background-color: rgb(63, 63, 70);
-        color: rgb(113, 113, 122);
-    }
-    
-    /* Text Areas */
-    QTextEdit {
-        background-color: rgb(24, 24, 27);
-        border: 1px solid rgb(63, 63, 70);
-        border-radius: 8px;
-        padding: 10px;
-        font-size: 15px;
-        color: rgb(250, 250, 250);
-        selection-background-color: rgb(99, 102, 241);
-        line-height: 1.4;
-    }
-    
-    QTextEdit:focus {
-        border: 2px solid rgb(99, 102, 241);
-        background-color: rgb(39, 39, 42);
-    }
-    
-    /* Checkboxes */
-    QCheckBox {
-        color: rgb(250, 250, 250);
-        font-size: 14px;
-        spacing: 6px;
-    }
-    
-    QCheckBox::indicator {
-        width: 14px;
-        height: 14px;
-        border-radius: 4px;
-        border: 1px solid rgb(63, 63, 70);
-        background-color: rgb(24, 24, 27);
-    }
-    
-    QCheckBox::indicator:checked {
-        background-color: rgb(99, 102, 241);
-        border: 1px solid rgb(99, 102, 241);
-    }
-    
-    QCheckBox::indicator:checked:hover {
-        background-color: rgb(79, 70, 229);
-        border: 1px solid rgb(79, 70, 229);
-    }
-    
-    QCheckBox::indicator:hover {
-        border: 1px solid rgb(99, 102, 241);
-    }
-    
-    /* Small Checkbox Style */
-    QCheckBox[class="small-checkbox"] {
-        color: rgb(161, 161, 170);
-        font-size: 11px;
-        spacing: 4px;
-    }
-    
-    QCheckBox[class="small-checkbox"]::indicator {
-        width: 12px;
-        height: 12px;
-        border-radius: 3px;
-        border: 1px solid rgb(63, 63, 70);
-        background-color: rgb(24, 24, 27);
-    }
-    
-    QCheckBox[class="small-checkbox"]::indicator:checked {
-        background-color: rgb(99, 102, 241);
-        border: 1px solid rgb(99, 102, 241);
-    }
-    
-    /* Labels */
-    QLabel {
-        color: rgb(250, 250, 250);
-        font-size: 14px;
-    }
-    
-    QLabel[class="muted"] {
-        color: rgb(161, 161, 170);
-        font-size: 13px;
-    }
-    
-    QLabel[class="description"] {
-        color: rgb(250, 250, 250);
-        font-size: 16px;
-        line-height: 1.7;
-    }
-    
-    QLabel[class="section-title"] {
-        color: rgb(161, 161, 170);
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    QLabel[class="quick-reply-text"] {
-        color: rgb(99, 102, 241);
-        font-size: 12px;
-        cursor: pointer;
-    }
-    
-    QLabel[class="quick-reply-text"]:hover {
-        color: rgb(129, 140, 248);
-        text-decoration: underline;
-    }
-    
-    /* Scrollbars */
-    QScrollBar:vertical {
-        background-color: rgb(39, 39, 42);
-        width: 8px;
-        border-radius: 4px;
-        margin: 0;
-    }
-    
-    QScrollBar::handle:vertical {
-        background-color: rgb(63, 63, 70);
-        border-radius: 4px;
-        min-height: 20px;
-    }
-    
-    QScrollBar::handle:vertical:hover {
-        background-color: rgb(82, 82, 91);
-    }
-    
-    QScrollBar::add-line:vertical,
-    QScrollBar::sub-line:vertical {
-        height: 0px;
-    }
-    
-    /* Horizontal Layout Spacing */
-    QHBoxLayout {
-        spacing: 8px;
-    }
-    
-    QVBoxLayout {
-        spacing: 12px;
-    }
-    """
+    # Read stylesheet from file
+    stylesheet_path = os.path.join(os.path.dirname(__file__), "feedback_dark_styles.qss")
+    try:
+        with open(stylesheet_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Error: Stylesheet file not found at {stylesheet_path}")
+        return ""
 
 
 def get_light_stylesheet():
     """Modern flat design stylesheet for light theme"""
-    return """
-    /* Main Window */
-    QMainWindow {
-        background-color: rgb(255, 255, 255);
-        color: rgb(15, 23, 42);
-    }
-    
-    /* Group Boxes - Card Style */
-    QGroupBox {
-        background-color: rgb(248, 250, 252);
-        border: 1px solid rgb(226, 232, 240);
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 600;
-        color: rgb(15, 23, 42);
-        margin-top: 8px;
-        padding-top: 14px;
-    }
-    
-    QGroupBox::title {
-        subcontrol-origin: margin;
-        left: 12px;
-        padding: 0 8px 0 8px;
-        color: rgb(71, 85, 105);
-        background-color: transparent;
-    }
-    
-    /* Modern Buttons */
-    QPushButton {
-        background-color: rgb(99, 102, 241);
-        color: rgb(255, 255, 255);
-        border: none;
-        border-radius: 8px;
-        padding: 6px 12px;
-        font-size: 14px;
-        font-weight: 500;
-        min-height: 28px;
-    }
-    
-    QPushButton:hover {
-        background-color: rgb(79, 70, 229);
-    }
-    
-    QPushButton:pressed {
-        background-color: rgb(67, 56, 202);
-    }
-    
-    QPushButton:disabled {
-        background-color: rgb(226, 232, 240);
-        color: rgb(148, 163, 184);
-    }
-    
-    /* Secondary Button Style */
-    QPushButton[class="secondary"] {
-        background-color: rgb(226, 232, 240);
-        color: rgb(15, 23, 42);
-    }
-    
-    QPushButton[class="secondary"]:hover {
-        background-color: rgb(203, 213, 225);
-    }
-    
-    QPushButton[class="secondary"]:pressed {
-        background-color: rgb(148, 163, 184);
-    }
-    
-    /* Quick Reply Button Style */
-    QPushButton[class="quick-reply"] {
-        background-color: rgb(203, 213, 225);
-        color: rgb(15, 23, 42);
-        border: none;
-        border-radius: 12px;
-        padding: 4px 8px;
-        font-size: 11px;
-        font-weight: 400;
-        min-height: 20px;
-        max-height: 24px;
-    }
-    
-    QPushButton[class="quick-reply"]:hover {
-        background-color: rgb(99, 102, 241);
-        color: rgb(255, 255, 255);
-    }
-    
-    QPushButton[class="quick-reply"]:pressed {
-        background-color: rgb(79, 70, 229);
-        color: rgb(255, 255, 255);
-    }
-    
-    /* Input Fields */
-    QLineEdit {
-        background-color: rgb(255, 255, 255);
-        border: 1px solid rgb(226, 232, 240);
-        border-radius: 6px;
-        padding: 6px 10px;
-        font-size: 14px;
-        color: rgb(15, 23, 42);
-        selection-background-color: rgb(99, 102, 241);
-    }
-    
-    QLineEdit:focus {
-        border: 2px solid rgb(99, 102, 241);
-        background-color: rgb(248, 250, 252);
-    }
-    
-    QLineEdit:disabled {
-        background-color: rgb(248, 250, 252);
-        color: rgb(148, 163, 184);
-    }
-    
-    /* Text Areas */
-    QTextEdit {
-        background-color: rgb(255, 255, 255);
-        border: 1px solid rgb(226, 232, 240);
-        border-radius: 8px;
-        padding: 10px;
-        font-size: 15px;
-        color: rgb(15, 23, 42);
-        selection-background-color: rgb(99, 102, 241);
-        line-height: 1.4;
-    }
-    
-    QTextEdit:focus {
-        border: 2px solid rgb(99, 102, 241);
-        background-color: rgb(248, 250, 252);
-    }
-    
-    /* Checkboxes */
-    QCheckBox {
-        color: rgb(15, 23, 42);
-        font-size: 14px;
-        spacing: 6px;
-    }
-    
-    QCheckBox::indicator {
-        width: 14px;
-        height: 14px;
-        border-radius: 4px;
-        border: 1px solid rgb(226, 232, 240);
-        background-color: rgb(255, 255, 255);
-    }
-    
-    QCheckBox::indicator:checked {
-        background-color: rgb(99, 102, 241);
-        border: 1px solid rgb(99, 102, 241);
-    }
-    
-    QCheckBox::indicator:checked:hover {
-        background-color: rgb(79, 70, 229);
-        border: 1px solid rgb(79, 70, 229);
-    }
-    
-    QCheckBox::indicator:hover {
-        border: 1px solid rgb(99, 102, 241);
-    }
-    
-    /* Small Checkbox Style */
-    QCheckBox[class="small-checkbox"] {
-        color: rgb(15, 23, 42);
-        font-size: 11px;
-        spacing: 4px;
-    }
-    
-    QCheckBox[class="small-checkbox"]::indicator {
-        width: 12px;
-        height: 12px;
-        border-radius: 3px;
-        border: 1px solid rgb(226, 232, 240);
-        background-color: rgb(255, 255, 255);
-    }
-    
-    QCheckBox[class="small-checkbox"]::indicator:checked {
-        background-color: rgb(99, 102, 241);
-        border: 1px solid rgb(99, 102, 241);
-    }
-    
-    /* Labels */
-    QLabel {
-        color: rgb(15, 23, 42);
-        font-size: 14px;
-    }
-    
-    QLabel[class="muted"] {
-        color: rgb(71, 85, 105);
-        font-size: 13px;
-    }
-    
-    QLabel[class="description"] {
-        color: rgb(15, 23, 42);
-        font-size: 16px;
-        line-height: 1.7;
-    }
-    
-    QLabel[class="section-title"] {
-        color: rgb(71, 85, 105);
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    QLabel[class="quick-reply-text"] {
-        color: rgb(99, 102, 241);
-        font-size: 12px;
-        cursor: pointer;
-    }
-    
-    QLabel[class="quick-reply-text"]:hover {
-        color: rgb(129, 140, 248);
-        text-decoration: underline;
-    }
-    
-    /* Scrollbars */
-    QScrollBar:vertical {
-        background-color: rgb(248, 250, 252);
-        width: 8px;
-        border-radius: 4px;
-        margin: 0;
-    }
-    
-    QScrollBar::handle:vertical {
-        background-color: rgb(226, 232, 240);
-        border-radius: 4px;
-        min-height: 20px;
-    }
-    
-    QScrollBar::handle:vertical:hover {
-        background-color: rgb(203, 213, 225);
-    }
-    
-    QScrollBar::add-line:vertical,
-    QScrollBar::sub-line:vertical {
-        height: 0px;
-    }
-    
-    /* Horizontal Layout Spacing */
-    QHBoxLayout {
-        spacing: 8px;
-    }
-    
-    QVBoxLayout {
-        spacing: 12px;
-    }
-    """
+    # Read stylesheet from file
+    stylesheet_path = os.path.join(os.path.dirname(__file__), "feedback_light_styles.qss")
+    try:
+        with open(stylesheet_path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        print(f"Error: Stylesheet file not found at {stylesheet_path}")
+        return ""
 
 
 def kill_tree(process: subprocess.Popen):
@@ -766,11 +296,19 @@ class FeedbackUI(QMainWindow):
     # Quick reply phrases for feedback
     QUICK_REPLIES = [
         "按计划继续",
-        "完全正确，任务完成", 
+        "完全正确，任务完成",
         "有小问题需要修正",
         "缺少重要功能"
     ]
-    
+
+    # Default window sizes (width, height)
+    DEFAULT_WINDOW_SIZES = {
+        "command_visible": (500, 1000),
+        "command_hidden": (500, 600)
+    }
+    # Minimum window size (width, height)
+    MINIMUM_WINDOW_SIZE = (500, 500)
+
     def __init__(self, project_directory: str, prompt: str):
         super().__init__()
         self.project_directory = project_directory
@@ -796,10 +334,12 @@ class FeedbackUI(QMainWindow):
         if geometry:
             self.restoreGeometry(geometry)
         else:
-            self.resize(500, 600)
+            # Use default size when no saved geometry
+            default_width, default_height = self.DEFAULT_WINDOW_SIZES["command_hidden"]
+            self.resize(default_width, default_height)
             screen = QApplication.primaryScreen().geometry()
-            x = (screen.width() - 500) // 2
-            y = (screen.height() - 600) // 2
+            x = (screen.width() - default_width) // 2
+            y = (screen.height() - default_height) // 2
             self.move(x, y)
         state = self.settings.value("windowState")
         if state:
@@ -854,7 +394,7 @@ class FeedbackUI(QMainWindow):
 
     def _create_ui(self):
         self.setWindowTitle("Interactive Feedback")
-        self.setMinimumSize(500, 500)
+        self.setMinimumSize(*self.MINIMUM_WINDOW_SIZE) # Use the new constant
         
         # Apply modern stylesheet
         self.setStyleSheet(get_modern_stylesheet())
@@ -1074,14 +614,14 @@ class FeedbackUI(QMainWindow):
     def restore_default_window_size(self):
         """Restore the window to its default size based on command section visibility."""
         screen = QApplication.primaryScreen().geometry()
-        
+
         if self.command_group.isVisible():
-            # Default size when command section is visible: 1000x500
-            default_width, default_height = 500, 1000
+            # Default size when command section is visible
+            default_width, default_height = self.DEFAULT_WINDOW_SIZES["command_visible"]
         else:
-            # Default size when command section is not visible: 600x500
-            default_width, default_height = 500, 600
-            
+            # Default size when command section is not visible
+            default_width, default_height = self.DEFAULT_WINDOW_SIZES["command_hidden"]
+
         # Calculate center position
         x = (screen.width() - default_width) // 2
         y = (screen.height() - default_height) // 2
