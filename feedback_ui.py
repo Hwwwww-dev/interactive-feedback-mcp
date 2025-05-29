@@ -11,7 +11,7 @@ import threading
 from typing import Optional, TypedDict
 
 import psutil
-from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings
+from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings, QMimeData
 from PySide6.QtGui import QTextCursor, QIcon, QKeyEvent, QFont, QFontDatabase, QPalette, QColor
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -287,6 +287,14 @@ class FeedbackTextEdit(QTextEdit):
         else:
             super().keyPressEvent(event)
 
+    def insertFromMimeData(self, source: QMimeData) -> None:
+        """
+        Override to ensure only plain text is pasted.
+        """
+        if source.hasText():
+            self.insertPlainText(source.text())
+        # If not plain text, do nothing (discard other formats)
+
 
 class LogSignals(QObject):
     append_log = Signal(str)
@@ -295,10 +303,10 @@ class LogSignals(QObject):
 class FeedbackUI(QMainWindow):
     # Quick reply phrases for feedback
     QUICK_REPLIES = [
-        "按计划继续",
+        "按计划继续执行",
         "任务完成，输出`Task Progress`",
-        "有小问题需要修正",
-        "结束请求"
+        "有问题需要检查并修正",
+        "立即结束请求",
     ]
 
     # Default window sizes (width, height)
@@ -413,17 +421,20 @@ class FeedbackUI(QMainWindow):
         self.toggle_command_button = QPushButton("Command Plan'e")
         self.toggle_command_button.setProperty("class", "secondary")
         self.toggle_command_button.clicked.connect(self._toggle_command_section)
+        self.toggle_command_button.setCursor(Qt.CursorShape.PointingHandCursor)
         
         # Restore Default Size Button (20% width)
         self.restore_size_button = QPushButton("🔄")
         self.restore_size_button.setProperty("class", "secondary")
         self.restore_size_button.clicked.connect(self.restore_default_window_size)
+        self.restore_size_button.setCursor(Qt.CursorShape.PointingHandCursor)
         
         # Theme Toggle Button (10% width)
         theme_icon = "💻" if self.theme_mode == "auto" else ("🌙" if self.theme_mode == "dark" else "☀️")
         self.theme_toggle_button = QPushButton(theme_icon)
         self.theme_toggle_button.setProperty("class", "secondary")
         self.theme_toggle_button.clicked.connect(self.toggle_theme)
+        self.theme_toggle_button.setCursor(Qt.CursorShape.PointingHandCursor)
         
         # Add buttons to layout with 7:2:1 ratio
         buttons_layout.addWidget(self.toggle_command_button, 8)
@@ -455,6 +466,7 @@ class FeedbackUI(QMainWindow):
         self.command_entry.textChanged.connect(self._update_config)
         self.run_button = QPushButton("&Run")
         self.run_button.clicked.connect(self._run_command)
+        self.run_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
         command_input_layout.addWidget(self.command_entry)
         command_input_layout.addWidget(self.run_button)
@@ -463,12 +475,15 @@ class FeedbackUI(QMainWindow):
         # Auto-execute and save config row
         auto_layout = QHBoxLayout()
         self.auto_check = QCheckBox("Execute automatically on next run")
+        self.auto_check.setProperty("class", "small-checkbox")
         self.auto_check.setChecked(self.config.get("execute_automatically", False))
         self.auto_check.stateChanged.connect(self._update_config)
+        self.auto_check.setCursor(Qt.CursorShape.PointingHandCursor)
 
         save_button = QPushButton("&Save Configuration")
         save_button.setProperty("class", "secondary")
         save_button.clicked.connect(self._save_config)
+        save_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
         auto_layout.addWidget(self.auto_check)
         auto_layout.addStretch()
@@ -495,6 +510,7 @@ class FeedbackUI(QMainWindow):
         self.clear_button = QPushButton("&Clear")
         self.clear_button.setProperty("class", "secondary")
         self.clear_button.clicked.connect(self.clear_logs)
+        self.clear_button.setCursor(Qt.CursorShape.PointingHandCursor)
         button_layout.addStretch()
         button_layout.addWidget(self.clear_button)
         console_layout_internal.addLayout(button_layout)
@@ -516,9 +532,10 @@ class FeedbackUI(QMainWindow):
         feedback_layout.addWidget(section_title)
 
         # Short description label (from self.prompt)
-        self.description_label = QLabel(self.prompt)
+        self.description_label = QLabel(f"""<p style="line-height: 1.4;">{self.prompt}</p>""")
         self.description_label.setProperty("class", "description")
         self.description_label.setWordWrap(True)
+        self.description_label.setTextFormat(Qt.RichText)
         self.description_label.setContentsMargins(0, 0, 0, 12)  # Add bottom margin
         feedback_layout.addWidget(self.description_label)
 
@@ -528,8 +545,7 @@ class FeedbackUI(QMainWindow):
         # Calculate height for 3 lines + some padding for margins
         padding = self.feedback_text.contentsMargins().top() + self.feedback_text.contentsMargins().bottom() + 5  # 5 is extra vertical padding
         self.feedback_text.setMinimumHeight(3 * row_height + padding)
-
-        self.feedback_text.setPlaceholderText("Enter your feedback here (Cmd+Enter to submit)")
+        self.feedback_text.setPlaceholderText("Enter your feedback here.")
         
         # Quick reply text links
         quick_reply_container = QVBoxLayout()
@@ -547,6 +563,7 @@ class FeedbackUI(QMainWindow):
         self.auto_submit_check = QCheckBox("Auto Submit")
         self.auto_submit_check.setChecked(True)  # Default to auto-submit
         self.auto_submit_check.setProperty("class", "small-checkbox")
+        self.auto_submit_check.setCursor(Qt.CursorShape.PointingHandCursor)
         quick_header_layout.addWidget(self.auto_submit_check)
         
         quick_header_layout.addStretch()
@@ -560,7 +577,7 @@ class FeedbackUI(QMainWindow):
         for i, reply_text in enumerate(self.QUICK_REPLIES):
             quick_label = QLabel(f"• {reply_text}")
             quick_label.setProperty("class", "quick-reply-text")
-            
+            quick_label.setCursor(Qt.CursorShape.PointingHandCursor)
             # Create a proper click handler to avoid closure issues
             def make_click_handler(text):
                 return lambda event: self._quick_reply_clicked(text)
@@ -575,6 +592,7 @@ class FeedbackUI(QMainWindow):
         
         submit_button = QPushButton("&Send Feedback (⌘+⏎ / ⇧+⏎)")
         submit_button.clicked.connect(self._submit_feedback)
+        submit_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
         feedback_layout.addWidget(self.feedback_text)
         feedback_layout.addLayout(quick_reply_container)
