@@ -209,6 +209,16 @@ QLabel[class="quick-reply-text"]:hover {
     text-decoration: underline;
 }
 
+/* Notification Banner */
+QLabel[class="notification-banner"] {
+    background-color: rgba(59, 130, 246, 0.9);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+}
+
 /* Scrollbars */
 QScrollBar:vertical {
     background-color: rgb(248, 250, 252);

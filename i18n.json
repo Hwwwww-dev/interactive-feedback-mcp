@@ -1,0 +1,118 @@
+{
+    "window_titles": {
+        "zh": {
+            "main_title": "交互式反馈 MCP",
+            "interactive_feedback": "交互式反馈"
+        },
+        "en": {
+            "main_title": "Interactive Feedback MCP",
+            "interactive_feedback": "Interactive Feedback"
+        }
+    },
+    "group_titles": {
+        "zh": {
+            "command": "命令",
+            "console": "控制台",
+            "feedback": "反馈"
+        },
+        "en": {
+            "command": "Command",
+            "console": "Console",
+            "feedback": "Feedback"
+        }
+    },
+    "buttons": {
+        "zh": {
+            "command_section": "命令面板",
+            "hide_command_section": "隐藏命令面板",
+            "run": "运行(&R)",
+            "stop": "停止(&S)",
+            "clear": "清除(&C)",
+            "save_configuration": "保存配置(&S)",
+            "send_feedback": "发送反馈 (⌘+⏎ / ⇧+⏎)",
+            "restore_size": "🔄",
+            "theme_auto": "💻",
+            "theme_dark": "🌙",
+            "theme_light": "☀️",
+            "language_zh": "🇨🇳",
+            "language_en": "🇺🇸"
+        },
+        "en": {
+            "command_section": "Command Section",
+            "hide_command_section": "Hide Command Section",
+            "run": "&Run",
+            "stop": "Sto&p",
+            "clear": "&Clear",
+            "save_configuration": "&Save Configuration",
+            "send_feedback": "&Send Feedback (⌘+⏎ / ⇧+⏎)",
+            "restore_size": "🔄",
+            "theme_auto": "💻",
+            "theme_dark": "🌙",
+            "theme_light": "☀️",
+            "language_zh": "🇨🇳",
+            "language_en": "🇺🇸"
+        }
+    },
+    "labels": {
+        "zh": {
+            "working_directory": "工作目录: {path}",
+            "ai_assistant_summary": "AI 助手摘要",
+            "quick_reply": "快速回复:",
+            "auto_submit": "自动提交"
+        },
+        "en": {
+            "working_directory": "Working directory: {path}",
+            "ai_assistant_summary": "AI Assistant Summary",
+            "quick_reply": "Quick Reply:",
+            "auto_submit": "Auto Submit"
+        }
+    },
+    "placeholders": {
+        "zh": {
+            "command_input": "输入要运行的命令 (例如: npm test, python script.py)",
+            "feedback_input": "在此输入您的反馈。"
+        },
+        "en": {
+            "command_input": "Enter command to run (e.g., npm test, python script.py)",
+            "feedback_input": "Enter your feedback here."
+        }
+    },
+    "checkboxes": {
+        "zh": {
+            "execute_automatically": "下次运行时自动执行"
+        },
+        "en": {
+            "execute_automatically": "Execute automatically on next run"
+        }
+    },
+    "quick_replies": {
+        "zh": [
+            "按计划继续执行",
+            "任务完成，输出`Task Progress`",
+            "有问题需要检查并修正",
+            "立即结束请求"
+        ],
+        "en": [
+            "Continue as planned",
+            "Task completed, output `Task Progress`",
+            "Issues found, need to check and fix",
+            "End request immediately"
+        ]
+    },
+    "messages": {
+        "zh": {
+            "process_exited": "\n进程退出，退出码 {code}\n",
+            "enter_command": "请输入要运行的命令\n",
+            "command_running": "$ {command}\n",
+            "error_running_command": "运行命令时出错: {error}\n",
+            "config_saved": "项目配置已保存。\n"
+        },
+        "en": {
+            "process_exited": "\nProcess exited with code {code}\n",
+            "enter_command": "Please enter a command to run\n",
+            "command_running": "$ {command}\n",
+            "error_running_command": "Error running command: {error}\n",
+            "config_saved": "Configuration saved for this project.\n"
+        }
+    }
+}

@@ -18,6 +18,9 @@ from PySide6.QtWidgets import (
     QLabel, QLineEdit, QPushButton, QCheckBox, QTextEdit, QGroupBox, QGridLayout
 )
 
+# Import bilingual text manager
+from i18n import get_text_manager
+
 
 class FeedbackResult(TypedDict):
     command_logs: str
@@ -301,14 +304,6 @@ class LogSignals(QObject):
 
 
 class FeedbackUI(QMainWindow):
-    # Quick reply phrases for feedback
-    QUICK_REPLIES = [
-        "按计划继续执行",
-        "任务完成，输出`Task Progress`",
-        "有问题需要检查并修正",
-        "立即结束请求",
-    ]
-
     # Default window sizes (width, height)
     DEFAULT_WINDOW_SIZES = {
         "command_visible": (500, 1000),
@@ -328,11 +323,17 @@ class FeedbackUI(QMainWindow):
         self.log_signals = LogSignals()
         self.log_signals.append_log.connect(self._append_log)
 
-        self.setWindowTitle("Interactive Feedback MCP")
+        # Initialize bilingual text manager
+        self.text_manager = get_text_manager()
+
+        self.setWindowTitle(self.text_manager.get_text('window_titles', 'interactive_feedback'))
         script_dir = os.path.dirname(os.path.abspath(__file__))
         icon_path = os.path.join(script_dir, "images", "feedback.png")
         self.setWindowIcon(QIcon(icon_path))
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        
+        # Create notification banner (initially hidden)
+        self.notification_banner = None
         
         self.settings = QSettings("InteractiveFeedbackMCP", "InteractiveFeedbackMCP")
         
@@ -376,9 +377,9 @@ class FeedbackUI(QMainWindow):
         # Set command section visibility AFTER _create_ui has created relevant widgets
         self.command_group.setVisible(command_section_visible)
         if command_section_visible:
-            self.toggle_command_button.setText("Hide Command Section")
+            self.toggle_command_button.setText(self.text_manager.get_text('buttons', 'hide_command_section'))
         else:
-            self.toggle_command_button.setText("Command Section")
+            self.toggle_command_button.setText(self.text_manager.get_text('buttons', 'command_section'))
 
         # Start theme monitoring timer for auto mode
         self.theme_timer = QTimer()
@@ -401,7 +402,7 @@ class FeedbackUI(QMainWindow):
         return path
 
     def _create_ui(self):
-        self.setWindowTitle("Interactive Feedback")
+        self.setWindowTitle(self.text_manager.get_text('window_titles', 'interactive_feedback'))
         self.setMinimumSize(*self.MINIMUM_WINDOW_SIZE) # Use the new constant
         
         # Apply modern stylesheet
@@ -418,53 +419,67 @@ class FeedbackUI(QMainWindow):
         buttons_layout.setSpacing(10)
         
         # Toggle Command Section Button (70% width)
-        self.toggle_command_button = QPushButton("Command Plan'e")
+        self.toggle_command_button = QPushButton(self.text_manager.get_text('buttons', 'command_section'))
         self.toggle_command_button.setProperty("class", "secondary")
         self.toggle_command_button.clicked.connect(self._toggle_command_section)
         self.toggle_command_button.setCursor(Qt.CursorShape.PointingHandCursor)
         
         # Restore Default Size Button (20% width)
-        self.restore_size_button = QPushButton("🔄")
+        self.restore_size_button = QPushButton(self.text_manager.get_text('buttons', 'restore_size'))
         self.restore_size_button.setProperty("class", "secondary")
         self.restore_size_button.clicked.connect(self.restore_default_window_size)
         self.restore_size_button.setCursor(Qt.CursorShape.PointingHandCursor)
         
         # Theme Toggle Button (10% width)
-        theme_icon = "💻" if self.theme_mode == "auto" else ("🌙" if self.theme_mode == "dark" else "☀️")
+        theme_icon = self.text_manager.get_text('buttons', 'theme_auto') if self.theme_mode == "auto" else (self.text_manager.get_text('buttons', 'theme_dark') if self.theme_mode == "dark" else self.text_manager.get_text('buttons', 'theme_light'))
         self.theme_toggle_button = QPushButton(theme_icon)
         self.theme_toggle_button.setProperty("class", "secondary")
         self.theme_toggle_button.clicked.connect(self.toggle_theme)
         self.theme_toggle_button.setCursor(Qt.CursorShape.PointingHandCursor)
         
-        # Add buttons to layout with 7:2:1 ratio
-        buttons_layout.addWidget(self.toggle_command_button, 8)
+        # Language Toggle Button (10% width)
+        current_lang = self.text_manager.get_current_language()
+        language_text = self.text_manager.get_text('buttons', f'language_{current_lang}')
+        self.language_toggle_button = QPushButton(language_text)
+        self.language_toggle_button.setProperty("class", "secondary")
+        self.language_toggle_button.clicked.connect(self.toggle_language)
+        self.language_toggle_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        # Set tooltip to show language names
+        if current_lang == 'zh':
+            self.language_toggle_button.setToolTip("切换到 English")
+        else:
+            self.language_toggle_button.setToolTip("切换到中文")
+        
+        # Add buttons to layout with 7:1:1:1 ratio
+        buttons_layout.addWidget(self.toggle_command_button, 7)
         buttons_layout.addWidget(self.restore_size_button, 1)
         buttons_layout.addWidget(self.theme_toggle_button, 1)
+        buttons_layout.addWidget(self.language_toggle_button, 1)
         
         layout.addLayout(buttons_layout)
 
         # Command section
-        self.command_group = QGroupBox("Command")
+        self.command_group = QGroupBox(self.text_manager.get_text('group_titles', 'command'))
         command_layout = QVBoxLayout(self.command_group)
         command_layout.setSpacing(14)
         command_layout.setContentsMargins(16, 18, 16, 16)
 
         # Working directory label
         formatted_path = self._format_windows_path(self.project_directory)
-        working_dir_label = QLabel(f"Working directory: {formatted_path}")
-        working_dir_label.setProperty("class", "muted")
-        working_dir_label.setWordWrap(True)
-        command_layout.addWidget(working_dir_label)
+        self.working_dir_label = QLabel(self.text_manager.get_text('labels', 'working_directory', path=formatted_path))
+        self.working_dir_label.setProperty("class", "muted")
+        self.working_dir_label.setWordWrap(True)
+        command_layout.addWidget(self.working_dir_label)
 
         # Command input row
         command_input_layout = QHBoxLayout()
         command_input_layout.setSpacing(10)
         self.command_entry = QLineEdit()
-        self.command_entry.setPlaceholderText("Enter command to run (e.g., npm test, python script.py)")
+        self.command_entry.setPlaceholderText(self.text_manager.get_text('placeholders', 'command_input'))
         self.command_entry.setText(self.config["run_command"])
         self.command_entry.returnPressed.connect(self._run_command)
         self.command_entry.textChanged.connect(self._update_config)
-        self.run_button = QPushButton("&Run")
+        self.run_button = QPushButton(self.text_manager.get_text('buttons', 'run'))
         self.run_button.clicked.connect(self._run_command)
         self.run_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
@@ -474,28 +489,28 @@ class FeedbackUI(QMainWindow):
 
         # Auto-execute and save config row
         auto_layout = QHBoxLayout()
-        self.auto_check = QCheckBox("Execute automatically on next run")
+        self.auto_check = QCheckBox(self.text_manager.get_text('checkboxes', 'execute_automatically'))
         self.auto_check.setProperty("class", "small-checkbox")
         self.auto_check.setChecked(self.config.get("execute_automatically", False))
         self.auto_check.stateChanged.connect(self._update_config)
         self.auto_check.setCursor(Qt.CursorShape.PointingHandCursor)
 
-        save_button = QPushButton("&Save Configuration")
-        save_button.setProperty("class", "secondary")
-        save_button.clicked.connect(self._save_config)
-        save_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.save_button = QPushButton(self.text_manager.get_text('buttons', 'save_configuration'))
+        self.save_button.setProperty("class", "secondary")
+        self.save_button.clicked.connect(self._save_config)
+        self.save_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
         auto_layout.addWidget(self.auto_check)
         auto_layout.addStretch()
-        auto_layout.addWidget(save_button)
+        auto_layout.addWidget(self.save_button)
         command_layout.addLayout(auto_layout)
 
         # Console section (now part of command_group)
-        console_group = QGroupBox("Console")
-        console_layout_internal = QVBoxLayout(console_group)
+        self.console_group = QGroupBox(self.text_manager.get_text('group_titles', 'console'))
+        console_layout_internal = QVBoxLayout(self.console_group)
         console_layout_internal.setSpacing(10)
         console_layout_internal.setContentsMargins(14, 14, 14, 14)
-        console_group.setMinimumHeight(200)
+        self.console_group.setMinimumHeight(200)
 
         # Log text area
         self.log_text = QTextEdit()
@@ -507,7 +522,7 @@ class FeedbackUI(QMainWindow):
 
         # Clear button
         button_layout = QHBoxLayout()
-        self.clear_button = QPushButton("&Clear")
+        self.clear_button = QPushButton(self.text_manager.get_text('buttons', 'clear'))
         self.clear_button.setProperty("class", "secondary")
         self.clear_button.clicked.connect(self.clear_logs)
         self.clear_button.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -515,21 +530,21 @@ class FeedbackUI(QMainWindow):
         button_layout.addWidget(self.clear_button)
         console_layout_internal.addLayout(button_layout)
 
-        command_layout.addWidget(console_group)
+        command_layout.addWidget(self.console_group)
 
         self.command_group.setVisible(False)
         layout.addWidget(self.command_group)
 
         # Feedback section with adjusted height
-        self.feedback_group = QGroupBox("Feedback")
+        self.feedback_group = QGroupBox(self.text_manager.get_text('group_titles', 'feedback'))
         feedback_layout = QVBoxLayout(self.feedback_group)
         feedback_layout.setSpacing(14)
         feedback_layout.setContentsMargins(16, 18, 16, 16)
 
         # Section title
-        section_title = QLabel("AI Assistant Summary")
-        section_title.setProperty("class", "section-title")
-        feedback_layout.addWidget(section_title)
+        self.section_title = QLabel(self.text_manager.get_text('labels', 'ai_assistant_summary'))
+        self.section_title.setProperty("class", "section-title")
+        feedback_layout.addWidget(self.section_title)
 
         # Short description label (from self.prompt)
         self.description_label = QLabel(f"""<p style="line-height: 1.4;">{self.prompt}</p>""")
@@ -545,7 +560,7 @@ class FeedbackUI(QMainWindow):
         # Calculate height for 3 lines + some padding for margins
         padding = self.feedback_text.contentsMargins().top() + self.feedback_text.contentsMargins().bottom() + 5  # 5 is extra vertical padding
         self.feedback_text.setMinimumHeight(3 * row_height + padding)
-        self.feedback_text.setPlaceholderText("Enter your feedback here.")
+        self.feedback_text.setPlaceholderText(self.text_manager.get_text('placeholders', 'feedback_input'))
         
         # Quick reply text links
         quick_reply_container = QVBoxLayout()
@@ -556,11 +571,11 @@ class FeedbackUI(QMainWindow):
         quick_header_layout = QHBoxLayout()
         quick_header_layout.setSpacing(8)
         
-        quick_label = QLabel("Quick Reply:")
-        quick_label.setProperty("class", "muted")
-        quick_header_layout.addWidget(quick_label)
+        self.quick_label = QLabel(self.text_manager.get_text('labels', 'quick_reply'))
+        self.quick_label.setProperty("class", "muted")
+        quick_header_layout.addWidget(self.quick_label)
         
-        self.auto_submit_check = QCheckBox("Auto Submit")
+        self.auto_submit_check = QCheckBox(self.text_manager.get_text('labels', 'auto_submit'))
         self.auto_submit_check.setChecked(True)  # Default to auto-submit
         self.auto_submit_check.setProperty("class", "small-checkbox")
         self.auto_submit_check.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -574,7 +589,9 @@ class FeedbackUI(QMainWindow):
         quick_grid.setSpacing(4)
         quick_grid.setVerticalSpacing(2)
         
-        for i, reply_text in enumerate(self.QUICK_REPLIES):
+        # Get quick replies from text manager
+        quick_replies = self.text_manager.get_quick_replies()
+        for i, reply_text in enumerate(quick_replies):
             quick_label = QLabel(f"• {reply_text}")
             quick_label.setProperty("class", "quick-reply-text")
             quick_label.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -590,18 +607,18 @@ class FeedbackUI(QMainWindow):
         
         quick_reply_container.addLayout(quick_grid)
         
-        submit_button = QPushButton("&Send Feedback (⌘+⏎ / ⇧+⏎)")
-        submit_button.clicked.connect(self._submit_feedback)
-        submit_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.submit_button = QPushButton(self.text_manager.get_text('buttons', 'send_feedback'))
+        self.submit_button.clicked.connect(self._submit_feedback)
+        self.submit_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
         feedback_layout.addWidget(self.feedback_text)
         feedback_layout.addLayout(quick_reply_container)
-        feedback_layout.addWidget(submit_button)
+        feedback_layout.addWidget(self.submit_button)
 
         # Set minimum height for feedback_group to accommodate its contents
         # This will be based on the section title, description label and the 3-line feedback_text
         self.feedback_group.setMinimumHeight(
-            section_title.sizeHint().height() + self.description_label.sizeHint().height() + self.feedback_text.minimumHeight() + submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10)  # 10 for extra padding
+            self.section_title.sizeHint().height() + self.description_label.sizeHint().height() + self.feedback_text.minimumHeight() + self.submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10)  # 10 for extra padding
 
         # Add widgets in a specific order
         layout.addWidget(self.feedback_group)
@@ -614,11 +631,11 @@ class FeedbackUI(QMainWindow):
         is_visible = self.command_group.isVisible()
         self.command_group.setVisible(not is_visible)
         if not is_visible:
-            self.toggle_command_button.setText("Hide Command Section")
+            self.toggle_command_button.setText(self.text_manager.get_text('buttons', 'command_section'))
             # When command section becomes visible, call restore_default_window_size method
             self.restore_default_window_size()
         else:
-            self.toggle_command_button.setText("Command Section")
+            self.toggle_command_button.setText(self.text_manager.get_text('buttons', 'hide_command_section'))
             # When closing command section, only adjust window size
             new_height = self.centralWidget().sizeHint().height()
             current_width = self.width()
@@ -666,11 +683,15 @@ class FeedbackUI(QMainWindow):
         # Update theme toggle button text
         if hasattr(self, 'theme_toggle_button'):
             if self.theme_mode == "auto":
-                self.theme_toggle_button.setText("💻")
+                self.theme_toggle_button.setText(self.text_manager.get_text('buttons', 'theme_auto'))
             elif self.theme_mode == "dark":
-                self.theme_toggle_button.setText("🌙")
+                self.theme_toggle_button.setText(self.text_manager.get_text('buttons', 'theme_dark'))
             else:  # light
-                self.theme_toggle_button.setText("☀️")
+                self.theme_toggle_button.setText(self.text_manager.get_text('buttons', 'theme_light'))
+        
+        # Update language button text
+        if hasattr(self, 'language_toggle_button'):
+            self.update_language_button()
 
     def toggle_theme(self):
         """Cycle through auto, dark, and light theme modes."""
@@ -695,6 +716,74 @@ class FeedbackUI(QMainWindow):
                     self.theme_timer.start(3000)
             else:
                 self.theme_timer.stop()
+
+    def toggle_language(self):
+        """Toggle between Chinese and English languages."""
+        # Toggle language in text manager
+        new_lang = self.text_manager.toggle_language()
+        
+        # Update language button text and tooltip
+        self.update_language_button()
+        
+        # Show top notification banner
+        if new_lang == 'zh':
+            message = "语言已切换到中文，下次启动时界面将显示中文。"
+        else:
+            message = "Language switched to English, interface will be in English on next startup."
+        
+        self.show_notification_banner(message)
+
+
+
+    def show_notification_banner(self, message: str):
+        """Show a beautiful notification banner at the top of the window."""
+        # Remove existing banner if any
+        if self.notification_banner:
+            self.notification_banner.deleteLater()
+        
+        # Create notification banner
+        self.notification_banner = QLabel(message)
+        self.notification_banner.setParent(self)
+        self.notification_banner.setAlignment(Qt.AlignCenter)
+        self.notification_banner.setWordWrap(True)
+        
+        # Apply CSS class for styling
+        self.notification_banner.setProperty("class", "notification-banner")
+        
+        # Position banner at top center
+        self.notification_banner.adjustSize()
+        banner_width = min(self.notification_banner.width() + 40, self.width() - 40)
+        banner_height = self.notification_banner.height()
+        
+        x = (self.width() - banner_width) // 2
+        y = 20  # 20px from top
+        
+        self.notification_banner.setGeometry(x, y, banner_width, banner_height)
+        self.notification_banner.show()
+        
+        # Auto-hide after 4 seconds with fade effect
+        QTimer.singleShot(4000, self.hide_notification_banner)
+    
+    def hide_notification_banner(self):
+        """Hide and remove the notification banner."""
+        if self.notification_banner:
+            self.notification_banner.hide()
+            self.notification_banner.deleteLater()
+            self.notification_banner = None
+
+    def update_language_button(self):
+        """Update language button text and tooltip."""
+        current_lang = self.text_manager.get_current_language()
+        language_text = self.text_manager.get_text('buttons', f'language_{current_lang}')
+        self.language_toggle_button.setText(language_text)
+        
+        # Update tooltip
+        if current_lang == 'zh':
+            self.language_toggle_button.setToolTip("切换到 English")
+        else:
+            self.language_toggle_button.setToolTip("切换到中文")
+
+
 
     def _update_config(self):
         self.config["run_command"] = self.command_entry.text()
@@ -766,8 +855,8 @@ class FeedbackUI(QMainWindow):
         if self.process and self.process.poll() is not None:
             # Process has terminated
             exit_code = self.process.poll()
-            self._append_log(f"\nProcess exited with code {exit_code}\n")
-            self.run_button.setText("&Run")
+            self._append_log(self.text_manager.get_text('messages', 'process_exited', code=exit_code))
+            self.run_button.setText(self.text_manager.get_text('buttons', 'run'))
             self.process = None
             self.activateWindow()
             self.feedback_text.setFocus()
@@ -776,7 +865,7 @@ class FeedbackUI(QMainWindow):
         if self.process:
             kill_tree(self.process)
             self.process = None
-            self.run_button.setText("&Run")
+            self.run_button.setText(self.text_manager.get_text('buttons', 'run'))
             return
 
         # Clear the log buffer but keep UI logs visible
@@ -784,11 +873,11 @@ class FeedbackUI(QMainWindow):
 
         command = self.command_entry.text()
         if not command:
-            self._append_log("Please enter a command to run\n")
+            self._append_log(self.text_manager.get_text('messages', 'enter_command'))
             return
 
-        self._append_log(f"$ {command}\n")
-        self.run_button.setText("Sto&p")
+        self._append_log(self.text_manager.get_text('messages', 'command_running', command=command))
+        self.run_button.setText(self.text_manager.get_text('buttons', 'stop'))
 
         try:
             self.process = subprocess.Popen(
@@ -827,8 +916,8 @@ class FeedbackUI(QMainWindow):
             self.status_timer.start(100)  # Check every 100ms
 
         except Exception as e:
-            self._append_log(f"Error running command: {str(e)}\n")
-            self.run_button.setText("&Run")
+            self._append_log(self.text_manager.get_text('messages', 'command_error', error=str(e)))
+            self.run_button.setText(self.text_manager.get_text('buttons', 'run'))
 
     def _submit_feedback(self):
         self.feedback_result = FeedbackResult(
@@ -853,7 +942,7 @@ class FeedbackUI(QMainWindow):
         self.settings.setValue("run_command", self.config["run_command"])
         self.settings.setValue("execute_automatically", self.config["execute_automatically"])
         self.settings.endGroup()
-        self._append_log("Configuration saved for this project.\n")
+        self._append_log(self.text_manager.get_text('messages', 'config_saved'))
 
     def closeEvent(self, event):
         # Save general UI settings for the main window (geometry, state)
