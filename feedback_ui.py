@@ -12,6 +12,7 @@ import subprocess
 import sys
 import threading
 from typing import Optional, TypedDict
+from io import BytesIO
 
 import psutil
 from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings, QMimeData, QUrl
@@ -353,16 +354,17 @@ class ImagePreviewWidget(QWidget):
             if data_url.startswith('data:image/'):
                 # Extract base64 data
                 header, base64_data = data_url.split(',', 1)
-                # Calculate approximate file size (base64 is ~33% larger than original)
-                base64_size = len(base64_data)
-                original_size = int(base64_size * 0.75)
+                # Calculate actual file size from base64 data
+                import base64
+                actual_bytes = base64.b64decode(base64_data)
+                actual_size = len(actual_bytes)
                 
-                if original_size < 1024:
-                    return f"{original_size} B"
-                elif original_size < 1024 * 1024:
-                    return f"{original_size / 1024:.1f} KB"
+                if actual_size < 1024:
+                    return f"{actual_size} B"
+                elif actual_size < 1024 * 1024:
+                    return f"{actual_size / 1024:.1f} KB"
                 else:
-                    return f"{original_size / (1024 * 1024):.1f} MB"
+                    return f"{actual_size / (1024 * 1024):.1f} MB"
         except Exception:
             pass
         return "Unknown"
@@ -473,6 +475,80 @@ class FeedbackTextEdit(QTextEdit):
         """Check if file is a supported image format."""
         mime_type, _ = mimetypes.guess_type(file_path)
         return mime_type and mime_type.startswith('image/')
+    
+    def _compress_image(self, image_data: bytes, max_size: int = 1024, quality: int = 75) -> tuple[bytes, str]:
+        """
+        Compress image to reduce file size while maintaining reasonable quality.
+        
+        Args:
+            image_data: Original image bytes
+            max_size: Maximum width/height in pixels
+            quality: JPEG quality (1-100, lower = smaller file)
+            
+        Returns:
+            Tuple of (compressed_bytes, format)
+        """
+        try:
+            from PySide6.QtGui import QPixmap
+            from PySide6.QtCore import QBuffer, QIODevice
+            
+            # Load image from bytes
+            pixmap = QPixmap()
+            pixmap.loadFromData(image_data)
+            
+            if pixmap.isNull():
+                return image_data, "PNG"  # Return original if can't process
+            
+            # Calculate new size while maintaining aspect ratio
+            original_width = pixmap.width()
+            original_height = pixmap.height()
+            
+            if original_width <= max_size and original_height <= max_size:
+                # Image is already small enough, but still compress for quality
+                new_pixmap = pixmap
+            else:
+                # Scale down image
+                if original_width > original_height:
+                    new_width = max_size
+                    new_height = int(original_height * max_size / original_width)
+                else:
+                    new_height = max_size
+                    new_width = int(original_width * max_size / original_height)
+                
+                new_pixmap = pixmap.scaled(
+                    new_width, new_height,
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation
+                )
+            
+            # Save as JPEG for better compression (unless it's a PNG with transparency)
+            buffer = QBuffer()
+            buffer.open(QIODevice.WriteOnly)
+            
+            # Determine output format
+            if self._has_transparency(image_data):
+                # Keep PNG for images with transparency
+                new_pixmap.save(buffer, "PNG")
+                return buffer.data().data(), "PNG"
+            else:
+                # Use JPEG for better compression
+                new_pixmap.save(buffer, "JPEG", quality)
+                return buffer.data().data(), "JPEG"
+                
+        except Exception as e:
+            print(f"Error compressing image: {e}")
+            return image_data, "PNG"  # Return original if compression fails
+    
+    def _has_transparency(self, image_data: bytes) -> bool:
+        """Check if image has transparency (alpha channel)."""
+        try:
+            # Check PNG signature and look for transparency
+            if image_data.startswith(b'\x89PNG\r\n\x1a\n'):
+                # Simple check for PNG transparency - look for tRNS chunk or RGBA color type
+                return b'tRNS' in image_data[:1000] or b'RGBA' in image_data[:100]
+            return False
+        except:
+            return False
 
     def _handle_image_paste(self, image: QPixmap):
         """Handle image pasted from clipboard."""
@@ -486,20 +562,26 @@ class FeedbackTextEdit(QTextEdit):
                     parent._show_error_message("max_images_reached")
                 return
             
-            # Convert QPixmap to base64
+            # Convert QPixmap to bytes first
             from PySide6.QtCore import QBuffer, QIODevice
             from PySide6.QtGui import QPixmap
             
             buffer = QBuffer()
             buffer.open(QIODevice.WriteOnly)
             image.save(buffer, "PNG")
-            image_data = buffer.data().data()
-            base64_data = base64.b64encode(image_data).decode('utf-8')
+            original_data = buffer.data().data()
+            
+            # Compress the image
+            compressed_data, image_format = self._compress_image(original_data)
+            base64_data = base64.b64encode(compressed_data).decode('utf-8')
+            
+            # Determine file extension based on format
+            file_ext = "jpg" if image_format == "JPEG" else "png"
             
             # Create image entry
             image_entry = {
-                "filename": f"clipboard_image_{len(self.images) + 1}.png",
-                "data": f"data:image/png;base64,{base64_data}"
+                "filename": f"clipboard_image_{len(self.images) + 1}.{file_ext}",
+                "data": f"data:image/{image_format.lower()};base64,{base64_data}"
             }
             
             self.images.append(image_entry)
@@ -519,7 +601,12 @@ class FeedbackTextEdit(QTextEdit):
             while parent and not isinstance(parent, FeedbackUI):
                 parent = parent.parent()
             if parent:
-                parent._show_image_notification(image_entry['filename'])
+                # Calculate compression ratio
+                original_size = len(original_data)
+                compressed_size = len(compressed_data)
+                compression_ratio = (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+                
+                parent._show_image_notification(image_entry['filename'], compression_ratio)
                 parent._update_image_previews()
                 
         except Exception as e:
@@ -547,11 +634,9 @@ class FeedbackTextEdit(QTextEdit):
                     parent._show_error_message("image_too_large")
                 return
             
-            # Read and encode image
+            # Read and compress image
             with open(file_path, 'rb') as f:
-                image_data = f.read()
-            
-            base64_data = base64.b64encode(image_data).decode('utf-8')
+                original_data = f.read()
             
             # Determine MIME type
             mime_type, _ = mimetypes.guess_type(file_path)
@@ -563,17 +648,26 @@ class FeedbackTextEdit(QTextEdit):
                     parent._show_error_message("invalid_image_format")
                 return
             
+            # Compress the image
+            compressed_data, image_format = self._compress_image(original_data)
+            base64_data = base64.b64encode(compressed_data).decode('utf-8')
+            
+            # Update filename extension if format changed
+            original_filename = os.path.basename(file_path)
+            name_without_ext = os.path.splitext(original_filename)[0]
+            file_ext = "jpg" if image_format == "JPEG" else "png"
+            final_filename = f"{name_without_ext}.{file_ext}"
+            
             # Create image entry
-            filename = os.path.basename(file_path)
             image_entry = {
-                "filename": filename,
-                "data": f"data:{mime_type};base64,{base64_data}"
+                "filename": final_filename,
+                "data": f"data:image/{image_format.lower()};base64,{base64_data}"
             }
             
             self.images.append(image_entry)
             
             # Insert placeholder text with proper formatting
-            placeholder = f"[图片: {filename}]"
+            placeholder = f"[图片: {final_filename}]"
             cursor = self.textCursor()
             # If not at the beginning of a line, add a newline before
             if cursor.positionInBlock() > 0:
@@ -587,7 +681,12 @@ class FeedbackTextEdit(QTextEdit):
             while parent and not isinstance(parent, FeedbackUI):
                 parent = parent.parent()
             if parent:
-                parent._show_image_notification(filename)
+                # Calculate compression ratio
+                original_size = len(original_data)
+                compressed_size = len(compressed_data)
+                compression_ratio = (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+                
+                parent._show_image_notification(final_filename, compression_ratio)
                 parent._update_image_previews()
                 
         except Exception as e:
@@ -740,6 +839,9 @@ class FeedbackUI(QMainWindow):
         # Stay on top management
         self.stay_on_top = self.settings.value("stay_on_top", False, type=bool)
         
+        # Project path display management
+        self.show_full_path = False  # Default to show project name only
+        
         # Image management
         self.images = []
         self.image_preview_widgets = []
@@ -776,6 +878,29 @@ class FeedbackUI(QMainWindow):
             if len(path) >= 2 and path[1] == ":" and path[0].isalpha():
                 path = path[0].upper() + path[1:]
         return path
+    
+    def _get_project_name(self) -> str:
+        """Extract project name from project directory path."""
+        return os.path.basename(os.path.normpath(self.project_directory))
+    
+    def _update_project_path_display(self):
+        """Update the bottom project path label based on current display mode."""
+        if self.show_full_path:
+            # Show full path
+            formatted_path = self._format_windows_path(self.project_directory)
+            text = self.text_manager.get_text('labels', 'project_path', path=formatted_path)
+        else:
+            # Show project name only
+            project_name = self._get_project_name()
+            text = self.text_manager.get_text('labels', 'project_name', name=project_name)
+        
+        if hasattr(self, 'bottom_path_label'):
+            self.bottom_path_label.setText(text)
+    
+    def _toggle_project_path_display(self):
+        """Toggle between project name and full path display."""
+        self.show_full_path = not self.show_full_path
+        self._update_project_path_display()
 
     def _create_ui(self):
         self.setWindowTitle(self.text_manager.get_text('window_titles', 'interactive_feedback'))
@@ -932,6 +1057,8 @@ class FeedbackUI(QMainWindow):
         self.description_label.setWordWrap(True)
         self.description_label.setTextFormat(Qt.RichText)
         self.description_label.setContentsMargins(0, 0, 0, 12)  # Add bottom margin
+        # Enable text selection for copy functionality
+        self.description_label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
         feedback_layout.addWidget(self.description_label)
 
         self.feedback_text = FeedbackTextEdit()
@@ -1032,12 +1159,16 @@ class FeedbackUI(QMainWindow):
         layout.addWidget(self.feedback_group)
 
         # Bottom project path display
-        formatted_path = self._format_windows_path(self.project_directory)
-        self.bottom_path_label = QLabel(self.text_manager.get_text('labels', 'project_path', path=formatted_path))
+        # Initialize with project name (default display mode)
+        project_name = self._get_project_name()
+        self.bottom_path_label = QLabel(self.text_manager.get_text('labels', 'project_name', name=project_name))
         self.bottom_path_label.setProperty("class", "muted")
         self.bottom_path_label.setAlignment(Qt.AlignCenter)
         self.bottom_path_label.setWordWrap(True)
         self.bottom_path_label.setContentsMargins(8, 4, 8, 4)
+        # Enable click functionality
+        self.bottom_path_label.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.bottom_path_label.mousePressEvent = lambda event: self._toggle_project_path_display()
         layout.addWidget(self.bottom_path_label)
         
         # Apply the theme after all widgets are created
@@ -1143,8 +1274,7 @@ class FeedbackUI(QMainWindow):
         
         # Update bottom project path label
         if hasattr(self, 'bottom_path_label'):
-            formatted_path = self._format_windows_path(self.project_directory)
-            self.bottom_path_label.setText(self.text_manager.get_text('labels', 'project_path', path=formatted_path))
+            self._update_project_path_display()
         
 
         
@@ -1266,9 +1396,15 @@ class FeedbackUI(QMainWindow):
                 file_path = selected_files[0]
                 self.feedback_text._handle_image_file(file_path)
     
-    def _show_image_notification(self, filename: str):
-        """Show notification that image was added."""
-        message = self.text_manager.get_text('messages', 'image_added', filename=filename)
+    def _show_image_notification(self, filename: str, compression_ratio: float = 0):
+        """Show notification that image was added with compression info."""
+        if compression_ratio > 10:  # Only show compression info if significant
+            if self.text_manager.get_current_language() == 'zh':
+                message = f"图片已添加: {filename} (压缩了 {compression_ratio:.0f}%)"
+            else:
+                message = f"Image added: {filename} (compressed {compression_ratio:.0f}%)"
+        else:
+            message = self.text_manager.get_text('messages', 'image_added', filename=filename)
         self.show_notification_banner(message)
     
     def _show_error_message(self, error_key: str):

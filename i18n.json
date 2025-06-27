@@ -37,8 +37,8 @@
             "language_zh": "🇨🇳",
             "language_en": "🇺🇸",
             "stay_on_top_on": "📌",
-            "stay_on_top_off": "📌",
-            "add_image": "🖼️"
+            "stay_on_top_off": "📍",
+            "add_image": "📎"
         },
         "en": {
             "command_section": "Command Section",
@@ -55,24 +55,26 @@
             "language_zh": "🇨🇳",
             "language_en": "🇺🇸",
             "stay_on_top_on": "📌",
-            "stay_on_top_off": "📌",
-            "add_image": "🖼️"
+            "stay_on_top_off": "📍",
+            "add_image": "📎"
         }
     },
-    "labels": {
+            "labels": {
         "zh": {
             "working_directory": "工作目录: {path}",
             "ai_assistant_summary": "AI 助手摘要",
             "quick_reply": "快速回复:",
             "auto_submit": "自动提交",
-            "project_path": "项目路径: {path}"
+            "project_path": "项目路径: {path}",
+            "project_name": "项目: {name}"
         },
         "en": {
             "working_directory": "Working directory: {path}",
             "ai_assistant_summary": "AI Assistant Summary",
             "quick_reply": "Quick Reply:",
             "auto_submit": "Auto Submit",
-            "project_path": "Project Path: {path}"
+            "project_path": "Project Path: {path}",
+            "project_name": "Project: {name}"
         }
     },
 
