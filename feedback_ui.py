@@ -279,8 +279,8 @@ class FeedbackTextEdit(QTextEdit):
         super().__init__(parent)
 
     def keyPressEvent(self, event: QKeyEvent):
-        if (event.key() == Qt.Key_Return and event.modifiers() == Qt.ControlModifier) or \
-           (event.key() == Qt.Key_Return and event.modifiers() == Qt.ShiftModifier):
+        if (event.key() == Qt.Key_Return and event.modifiers() == Qt.ControlModifier):
+            # (event.key() == Qt.Key_Return and event.modifiers() == Qt.ShiftModifier):
             # Find the parent FeedbackUI instance and call submit
             parent = self.parent()
             while parent and not isinstance(parent, FeedbackUI):
