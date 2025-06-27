@@ -329,8 +329,48 @@ class FeedbackUI(QMainWindow):
         self.setWindowTitle(self.text_manager.get_text('window_titles', 'interactive_feedback'))
         script_dir = os.path.dirname(os.path.abspath(__file__))
         icon_path = os.path.join(script_dir, "images", "feedback.png")
-        self.setWindowIcon(QIcon(icon_path))
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        
+        # 设置窗口图标，添加存在性检查和调试信息
+        print(f"Debug: Looking for icon at: {icon_path}")
+        if os.path.exists(icon_path):
+            print(f"Debug: Icon file exists")
+            icon = QIcon(icon_path)
+            if not icon.isNull():
+                self.setWindowIcon(icon)
+                # 在macOS上设置应用程序图标到Dock
+                app = QApplication.instance()
+                if app:
+                    app.setWindowIcon(icon)
+                    if sys.platform == "darwin":
+                        # macOS上设置应用程序图标
+                        app.setApplicationDisplayName("Interactive Feedback")
+                print(f"Debug: Icon loaded successfully and set for application")
+            else:
+                print(f"Warning: Icon file exists but failed to load: {icon_path}")
+        else:
+            print(f"Warning: Icon file not found: {icon_path}")
+            # 列出当前目录内容以便调试
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            images_dir = os.path.join(script_dir, "images")
+            if os.path.exists(images_dir):
+                print(f"Debug: Images directory contents: {os.listdir(images_dir)}")
+            else:
+                print(f"Debug: Images directory not found: {images_dir}")
+        # 设置窗口标志：根据保存的置顶状态设置
+        # 在macOS上，需要使用不同的方法
+        if sys.platform == "darwin":  # macOS
+            # macOS上使用不同的窗口标志组合
+            # 不使用WindowStaysOnTopHint，而是在显示后设置置顶
+            flags = Qt.Window | Qt.WindowTitleHint | Qt.WindowSystemMenuHint | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint
+            self.setWindowFlags(flags)
+            print(f"Debug: macOS window flags set without StaysOnTop")
+        else:
+            # Windows和Linux上根据保存的置顶状态设置标志
+            flags = Qt.Window | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint
+            if self.stay_on_top:
+                flags |= Qt.WindowStaysOnTopHint
+            self.setWindowFlags(flags)
+            # Window flags set based on stay_on_top preference
         
         # Create notification banner (initially hidden)
         self.notification_banner = None
@@ -371,6 +411,9 @@ class FeedbackUI(QMainWindow):
         # Theme management
         self.theme_mode = self.settings.value("theme/mode", "auto", type=str)  # "auto", "dark", "light"
         self.is_dark_theme = self._get_effective_theme()
+        
+        # Stay on top management
+        self.stay_on_top = self.settings.value("stay_on_top", False, type=bool)
 
         self._create_ui()  # self.config is used here to set initial values
 
@@ -388,6 +431,10 @@ class FeedbackUI(QMainWindow):
             self.theme_timer.start(3000)  # Check every 3 seconds only in auto mode
 
         set_dark_title_bar(self, True)
+        
+        # Apply initial stay on top setting
+        if self.stay_on_top:
+            self._apply_stay_on_top()
 
         if self.config.get("execute_automatically", False):
             self._run_command()
@@ -450,11 +497,20 @@ class FeedbackUI(QMainWindow):
         else:
             self.language_toggle_button.setToolTip("切换到中文")
         
-        # Add buttons to layout with 7:1:1:1 ratio
-        buttons_layout.addWidget(self.toggle_command_button, 7)
+        # Stay on Top Toggle Button (10% width)
+        stay_on_top_icon = self.text_manager.get_text('buttons', 'stay_on_top_on' if self.stay_on_top else 'stay_on_top_off')
+        self.stay_on_top_button = QPushButton(stay_on_top_icon)
+        self.stay_on_top_button.setProperty("class", "secondary")
+        self.stay_on_top_button.clicked.connect(self.toggle_stay_on_top)
+        self.stay_on_top_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.update_stay_on_top_tooltip()
+        
+        # Add buttons to layout with 6:1:1:1:1 ratio
+        buttons_layout.addWidget(self.toggle_command_button, 6)
         buttons_layout.addWidget(self.restore_size_button, 1)
         buttons_layout.addWidget(self.theme_toggle_button, 1)
         buttons_layout.addWidget(self.language_toggle_button, 1)
+        buttons_layout.addWidget(self.stay_on_top_button, 1)
         
         layout.addLayout(buttons_layout)
 
@@ -623,6 +679,14 @@ class FeedbackUI(QMainWindow):
         # Add widgets in a specific order
         layout.addWidget(self.feedback_group)
 
+        # Bottom project path display
+        formatted_path = self._format_windows_path(self.project_directory)
+        self.bottom_path_label = QLabel(self.text_manager.get_text('labels', 'project_path', path=formatted_path))
+        self.bottom_path_label.setProperty("class", "muted")
+        self.bottom_path_label.setAlignment(Qt.AlignCenter)
+        self.bottom_path_label.setWordWrap(True)
+        self.bottom_path_label.setContentsMargins(8, 4, 8, 4)
+        layout.addWidget(self.bottom_path_label)
         
         # Apply the theme after all widgets are created
         self.apply_theme()
@@ -725,6 +789,15 @@ class FeedbackUI(QMainWindow):
         # Update language button text and tooltip
         self.update_language_button()
         
+        # Update bottom project path label
+        if hasattr(self, 'bottom_path_label'):
+            formatted_path = self._format_windows_path(self.project_directory)
+            self.bottom_path_label.setText(self.text_manager.get_text('labels', 'project_path', path=formatted_path))
+        
+        # Update stay on top button tooltip
+        if hasattr(self, 'stay_on_top_button'):
+            self.update_stay_on_top_tooltip()
+        
         # Show top notification banner
         if new_lang == 'zh':
             message = "语言已切换到中文，下次启动时界面将显示中文。"
@@ -782,6 +855,57 @@ class FeedbackUI(QMainWindow):
             self.language_toggle_button.setToolTip("切换到 English")
         else:
             self.language_toggle_button.setToolTip("切换到中文")
+    
+    def toggle_stay_on_top(self):
+        """Toggle window stay on top state."""
+        self.stay_on_top = not self.stay_on_top
+        self._apply_stay_on_top()
+        
+        # Update button icon and tooltip
+        stay_on_top_icon = self.text_manager.get_text('buttons', 'stay_on_top_on' if self.stay_on_top else 'stay_on_top_off')
+        self.stay_on_top_button.setText(stay_on_top_icon)
+        self.update_stay_on_top_tooltip()
+        
+        # Save preference
+        self.settings.setValue("stay_on_top", self.stay_on_top)
+    
+    def update_stay_on_top_tooltip(self):
+        """Update stay on top button tooltip."""
+        tooltip_key = 'stay_on_top_on' if self.stay_on_top else 'stay_on_top_off'
+        tooltip_text = self.text_manager.get_tooltip(tooltip_key)
+        self.stay_on_top_button.setToolTip(tooltip_text)
+    
+    def _apply_stay_on_top(self):
+        """Apply stay on top setting to the window."""
+        # Get current window state
+        was_visible = self.isVisible()
+        current_pos = self.pos()
+        current_size = self.size()
+        
+        # Update window flags
+        flags = self.windowFlags()
+        if self.stay_on_top:
+            flags |= Qt.WindowStaysOnTopHint
+        else:
+            flags &= ~Qt.WindowStaysOnTopHint
+        
+        # Apply new flags with minimal flicker
+        if was_visible:
+            # Temporarily hide to avoid flicker
+            self.hide()
+        
+        self.setWindowFlags(flags)
+        
+        # Restore position and size
+        self.move(current_pos)
+        self.resize(current_size)
+        
+        if was_visible:
+            self.show()
+            if self.stay_on_top and sys.platform == "darwin":
+                # Additional raise for macOS
+                self.raise_()
+                self.activateWindow()
 
 
 
@@ -967,6 +1091,13 @@ class FeedbackUI(QMainWindow):
 
     def run(self) -> FeedbackResult:
         self.show()
+        
+        # 在macOS上，窗口显示后设置置顶
+        if sys.platform == "darwin":
+            self.raise_()
+            self.activateWindow()
+            print(f"Debug: macOS window raised and activated")
+        
         QApplication.instance().exec()
 
         if self.process:

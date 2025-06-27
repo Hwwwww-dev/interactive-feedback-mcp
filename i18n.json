@@ -35,7 +35,9 @@
             "theme_dark": "🌙",
             "theme_light": "☀️",
             "language_zh": "🇨🇳",
-            "language_en": "🇺🇸"
+            "language_en": "🇺🇸",
+            "stay_on_top_on": "📌",
+            "stay_on_top_off": "📌"
         },
         "en": {
             "command_section": "Command Section",
@@ -50,7 +52,9 @@
             "theme_dark": "🌙",
             "theme_light": "☀️",
             "language_zh": "🇨🇳",
-            "language_en": "🇺🇸"
+            "language_en": "🇺🇸",
+            "stay_on_top_on": "📌",
+            "stay_on_top_off": "📌"
         }
     },
     "labels": {
@@ -58,13 +62,25 @@
             "working_directory": "工作目录: {path}",
             "ai_assistant_summary": "AI 助手摘要",
             "quick_reply": "快速回复:",
-            "auto_submit": "自动提交"
+            "auto_submit": "自动提交",
+            "project_path": "项目路径: {path}"
         },
         "en": {
             "working_directory": "Working directory: {path}",
             "ai_assistant_summary": "AI Assistant Summary",
             "quick_reply": "Quick Reply:",
-            "auto_submit": "Auto Submit"
+            "auto_submit": "Auto Submit",
+            "project_path": "Project Path: {path}"
+        }
+    },
+    "tooltips": {
+        "zh": {
+            "stay_on_top_on": "取消置顶",
+            "stay_on_top_off": "窗口置顶"
+        },
+        "en": {
+            "stay_on_top_on": "Unpin window",
+            "stay_on_top_off": "Pin window on top"
         }
     },
     "placeholders": {
