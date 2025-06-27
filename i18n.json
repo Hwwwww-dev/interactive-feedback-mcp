@@ -38,7 +38,8 @@
             "language_en": "🇺🇸",
             "stay_on_top_on": "📌",
             "stay_on_top_off": "📍",
-            "add_image": "📎"
+            "add_image": "📎",
+            "add_file": "📎"
         },
         "en": {
             "command_section": "Command Section",
@@ -56,7 +57,8 @@
             "language_en": "🇺🇸",
             "stay_on_top_on": "📌",
             "stay_on_top_off": "📍",
-            "add_image": "📎"
+            "add_image": "📎",
+            "add_file": "📎"
         }
     },
             "labels": {
@@ -122,8 +124,13 @@
             "invalid_image_format": "不支持的图片格式，请选择PNG、JPG、GIF或BMP格式",
             "max_images_reached": "最多只能添加5张图片",
             "select_image_file": "选择图片文件",
+            "select_file": "选择文件",
             "remove_image": "移除图片",
-            "double_click_to_remove": "双击删除"
+            "double_click_to_remove": "双击删除",
+            "max_text_files_reached": "最多只能添加5个文本文件",
+            "text_file_too_large": "文本文件太大，请选择小于5MB的文件",
+            "max_files_reached": "已达到文件数量限制",
+            "unsupported_file_type": "不支持的文件类型"
         },
         "en": {
             "process_exited": "\nProcess exited with code {code}\n",
@@ -136,8 +143,13 @@
             "invalid_image_format": "Unsupported image format, please select PNG, JPG, GIF or BMP format",
             "max_images_reached": "Maximum 5 images allowed",
             "select_image_file": "Select Image File",
+            "select_file": "Select File",
             "remove_image": "Remove Image",
-            "double_click_to_remove": "Double-click to remove"
+            "double_click_to_remove": "Double-click to remove",
+            "max_text_files_reached": "Maximum 5 text files allowed",
+            "text_file_too_large": "Text file is too large, please select a file smaller than 5MB",
+            "max_files_reached": "File limit reached",
+            "unsupported_file_type": "Unsupported file type"
         }
     }
 }

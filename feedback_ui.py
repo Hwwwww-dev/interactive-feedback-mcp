@@ -30,6 +30,7 @@ class FeedbackResult(TypedDict):
     command_logs: str
     interactive_feedback: str
     images: list[dict]  # List of {"filename": str, "data": str (base64)}
+    text_files: list[dict]  # List of {"filename": str, "content": str, "path": str, "size": int, "encoding": str}
 
 
 class FeedbackConfig(TypedDict):
@@ -277,12 +278,13 @@ def get_user_environment() -> dict[str, str]:
         CloseHandle(token)
 
 
-class ImagePreviewWidget(QWidget):
-    """Modern widget to display image preview with elegant design inspired by Cursor."""
+class FilePreviewWidget(QWidget):
+    """Base widget for file preview with elegant design inspired by Cursor."""
     
-    def __init__(self, image_data: dict, parent=None):
+    def __init__(self, file_data: dict, file_type: str, parent=None):
         super().__init__(parent)
-        self.image_data = image_data
+        self.file_data = file_data
+        self.file_type = file_type  # "image" or "text"
         self.parent_ui = parent
         self._setup_ui()
     
@@ -293,7 +295,7 @@ class ImagePreviewWidget(QWidget):
         # Main container
         container = QWidget(self)
         container.setGeometry(0, 0, 140, 32)
-        container.setProperty("class", "image-tab")
+        container.setProperty("class", f"{self.file_type}-tab")
         
         # Create layout for container
         layout = QHBoxLayout(container)
@@ -302,35 +304,33 @@ class ImagePreviewWidget(QWidget):
         layout.setAlignment(Qt.AlignVCenter)  # Ensure all items are vertically centered
         
         # Small icon/thumbnail (16x16 like in Cursor)
-        self.image_icon = QLabel()
-        self.image_icon.setFixedSize(16, 16)
-        self.image_icon.setScaledContents(True)
-        self.image_icon.setProperty("class", "image-tab-icon")
+        self.file_icon = QLabel()
+        self.file_icon.setFixedSize(16, 16)
+        self.file_icon.setScaledContents(True)
+        self.file_icon.setProperty("class", f"{self.file_type}-tab-icon")
         
-        # Load small icon
+        # Load appropriate icon
         self._load_tab_icon()
         
         # Filename label (truncated to fit tab)
         self.filename_label = QLabel(self._get_tab_filename())
-        self.filename_label.setProperty("class", "image-tab-filename")
+        self.filename_label.setProperty("class", f"{self.file_type}-tab-filename")
         self.filename_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
-
-        
         # Add widgets to layout
-        layout.addWidget(self.image_icon)
+        layout.addWidget(self.file_icon)
         layout.addWidget(self.filename_label)
         layout.addStretch()  # Push content to left
         
         # Set cursor to indicate clickable
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         container.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.image_icon.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.file_icon.setCursor(Qt.CursorShape.PointingHandCursor)
         self.filename_label.setCursor(Qt.CursorShape.PointingHandCursor)
     
     def _get_tab_filename(self):
         """Get a tab-friendly filename with smart truncation for fixed-width tabs."""
-        filename = self.image_data['filename']
+        filename = self.file_data['filename']
         # For 140px tab width with icon and close button, we have about 70px for text (roughly 9-10 chars)
         if len(filename) > 10:
             name, ext = os.path.splitext(filename)
@@ -338,42 +338,18 @@ class ImagePreviewWidget(QWidget):
                 return f"{name[:7]}...{ext}"
         return filename
     
-    def _get_display_filename(self):
-        """Get a display-friendly filename with smart truncation."""
-        filename = self.image_data['filename']
-        if len(filename) > 16:
-            name, ext = os.path.splitext(filename)
-            if len(name) > 12:
-                return f"{name[:12]}...{ext}"
-        return filename
-    
-    def _get_file_size(self):
-        """Calculate and format file size from base64 data."""
-        try:
-            data_url = self.image_data['data']
-            if data_url.startswith('data:image/'):
-                # Extract base64 data
-                header, base64_data = data_url.split(',', 1)
-                # Calculate actual file size from base64 data
-                import base64
-                actual_bytes = base64.b64decode(base64_data)
-                actual_size = len(actual_bytes)
-                
-                if actual_size < 1024:
-                    return f"{actual_size} B"
-                elif actual_size < 1024 * 1024:
-                    return f"{actual_size / 1024:.1f} KB"
-                else:
-                    return f"{actual_size / (1024 * 1024):.1f} MB"
-        except Exception:
-            pass
-        return "Unknown"
-    
     def _load_tab_icon(self):
-        """Load and display a small 16x16 icon for the tab."""
+        """Load and display appropriate icon for the file type."""
+        if self.file_type == "image":
+            self._load_image_icon()
+        else:  # text file
+            self._load_text_file_icon()
+    
+    def _load_image_icon(self):
+        """Load and display a small 16x16 icon for image files."""
         try:
             # Extract base64 data
-            data_url = self.image_data['data']
+            data_url = self.file_data['data']
             if data_url.startswith('data:image/'):
                 # Split data URL: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
                 header, base64_data = data_url.split(',', 1)
@@ -390,31 +366,69 @@ class ImagePreviewWidget(QWidget):
                         Qt.KeepAspectRatio, 
                         Qt.SmoothTransformation
                     )
-                    self.image_icon.setPixmap(icon_pixmap)
+                    self.file_icon.setPixmap(icon_pixmap)
                 else:
                     # Use a generic image icon
-                    self.image_icon.setText("🖼")
-                    self.image_icon.setAlignment(Qt.AlignCenter)
+                    self.file_icon.setText("🖼")
+                    self.file_icon.setAlignment(Qt.AlignCenter)
             else:
-                self.image_icon.setText("🖼")
-                self.image_icon.setAlignment(Qt.AlignCenter)
+                self.file_icon.setText("🖼")
+                self.file_icon.setAlignment(Qt.AlignCenter)
         except Exception as e:
             print(f"Error loading image icon: {e}")
-            self.image_icon.setText("🖼")
-            self.image_icon.setAlignment(Qt.AlignCenter)
+            self.file_icon.setText("🖼")
+            self.file_icon.setAlignment(Qt.AlignCenter)
     
-
+    def _load_text_file_icon(self):
+        """Load and display appropriate icon for text files based on extension."""
+        filename = self.file_data['filename']
+        file_ext = os.path.splitext(filename.lower())[1]
+        
+        # Icon mapping for different file types
+        icon_map = {
+            '.py': '🐍', '.pyw': '🐍', '.pyi': '🐍',
+            '.js': '🟨', '.jsx': '🟨', '.ts': '🔷', '.tsx': '🔷',
+            '.java': '☕', '.c': '🔧', '.cpp': '🔧', '.h': '🔧',
+            '.cs': '🔷', '.go': '🐹', '.rs': '🦀', '.swift': '🍎',
+            '.php': '🐘', '.rb': '💎', '.kt': '🎯', '.scala': '🔺',
+            '.html': '🌐', '.css': '🎨', '.xml': '📄', '.json': '📋',
+            '.md': '📝', '.txt': '📄', '.sql': '🗃️', '.sh': '⚡',
+            '.yaml': '⚙️', '.yml': '⚙️', '.toml': '⚙️', '.ini': '⚙️'
+        }
+        
+        icon = icon_map.get(file_ext, '📄')  # Default to document icon
+        self.file_icon.setText(icon)
+        self.file_icon.setAlignment(Qt.AlignCenter)
     
     def mouseDoubleClickEvent(self, event):
-        """Handle double-click to remove image."""
+        """Handle double-click to remove file."""
         if event.button() == Qt.LeftButton:
-            self._remove_image()
+            self._remove_file()
         super().mouseDoubleClickEvent(event)
     
-    def _remove_image(self):
-        """Remove this image from the parent widget with smooth animation."""
+    def _remove_file(self):
+        """Remove this file from the parent widget."""
         if self.parent_ui and hasattr(self.parent_ui, 'feedback_text'):
-            self.parent_ui.feedback_text._remove_image(self.image_data)
+            if self.file_type == "image":
+                self.parent_ui.feedback_text._remove_image(self.file_data)
+            else:  # text file
+                self.parent_ui.feedback_text._remove_text_file(self.file_data)
+
+
+class ImagePreviewWidget(FilePreviewWidget):
+    """Modern widget to display image preview with elegant design inspired by Cursor."""
+    
+    def __init__(self, image_data: dict, parent=None):
+        super().__init__(image_data, "image", parent)
+
+
+class TextFilePreviewWidget(FilePreviewWidget):
+    """Modern widget to display text file preview with elegant design inspired by Cursor."""
+    
+    def __init__(self, text_file_data: dict, parent=None):
+        super().__init__(text_file_data, "text", parent)
+
+
 
 
 class FeedbackTextEdit(QTextEdit):
@@ -422,6 +436,7 @@ class FeedbackTextEdit(QTextEdit):
         super().__init__(parent)
         self.setAcceptDrops(True)
         self.images = []  # Store image data as list of dicts
+        self.text_files = []  # Store text file data as list of dicts
 
     def keyPressEvent(self, event: QKeyEvent):
         if (event.key() == Qt.Key_Return and event.modifiers() == Qt.ControlModifier):
@@ -450,17 +465,17 @@ class FeedbackTextEdit(QTextEdit):
     def dragEnterEvent(self, event: QDragEnterEvent):
         """Handle drag enter events for files."""
         if event.mimeData().hasUrls():
-            # Check if any of the URLs are image files
+            # Check if any of the URLs are supported files (image or text)
             for url in event.mimeData().urls():
                 if url.isLocalFile():
                     file_path = url.toLocalFile()
-                    if self._is_image_file(file_path):
+                    if self._is_image_file(file_path) or self._is_text_file(file_path):
                         event.acceptProposedAction()
                         return
         super().dragEnterEvent(event)
 
     def dropEvent(self, event: QDropEvent):
-        """Handle drop events for image files."""
+        """Handle drop events for supported files."""
         if event.mimeData().hasUrls():
             for url in event.mimeData().urls():
                 if url.isLocalFile():
@@ -469,12 +484,93 @@ class FeedbackTextEdit(QTextEdit):
                         self._handle_image_file(file_path)
                         event.acceptProposedAction()
                         return
+                    elif self._is_text_file(file_path):
+                        self._handle_text_file(file_path)
+                        event.acceptProposedAction()
+                        return
         super().dropEvent(event)
 
     def _is_image_file(self, file_path: str) -> bool:
         """Check if file is a supported image format."""
         mime_type, _ = mimetypes.guess_type(file_path)
         return mime_type and mime_type.startswith('image/')
+    
+    def _is_text_file(self, file_path: str) -> bool:
+        """Check if file is a supported text/code format."""
+        # Define supported text file extensions
+        text_extensions = {
+            # Programming languages
+            '.py', '.pyw', '.pyi',  # Python
+            '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs',  # JavaScript/TypeScript
+            '.java',  # Java
+            '.c', '.cpp', '.cxx', '.cc', '.h', '.hpp', '.hxx',  # C/C++
+            '.cs', '.csx',  # C#
+            '.go',  # Go
+            '.rs',  # Rust
+            '.swift',  # Swift
+            '.kt', '.kts',  # Kotlin
+            '.scala', '.sc',  # Scala
+            '.rb', '.rbw',  # Ruby
+            '.php', '.phtml',  # PHP
+            '.pl', '.pm',  # Perl
+            '.r', '.R',  # R
+            '.m',  # MATLAB/Objective-C
+            '.lua',  # Lua
+            '.dart',  # Dart
+            '.mm',  # Objective-C++
+            
+            # Web development
+            '.html', '.htm', '.xhtml',  # HTML
+            '.css', '.scss', '.sass', '.less', '.styl',  # CSS
+            '.xml', '.xsl', '.xsd',  # XML
+            '.json', '.jsonc',  # JSON
+            '.yaml', '.yml',  # YAML
+            '.toml',  # TOML
+            
+            # Scripts and config
+            '.sh', '.bash', '.zsh', '.fish',  # Shell scripts
+            '.ps1',  # PowerShell
+            '.bat', '.cmd',  # Windows batch
+            '.sql',  # SQL
+            '.graphql', '.gql',  # GraphQL
+            
+            # Documents
+            '.md', '.markdown', '.mdown', '.mdx',  # Markdown
+            '.rst',  # reStructuredText
+            '.tex', '.cls', '.sty',  # LaTeX
+            '.txt', '.text',  # Plain text
+            '.log',  # Log files
+            
+            # Config files
+            '.ini', '.cfg', '.conf',  # INI/Config
+            '.properties',  # Properties
+            '.env', '.environment',  # Environment
+        }
+        
+        file_ext = os.path.splitext(file_path.lower())[1]
+        return file_ext in text_extensions or os.path.basename(file_path.lower()) in ['makefile', 'dockerfile']
+    
+    def _detect_encoding(self, file_path: str) -> str:
+        """Detect file encoding."""
+        try:
+            import chardet
+            with open(file_path, 'rb') as f:
+                raw_data = f.read(10240)  # Read first 10KB for detection
+                result = chardet.detect(raw_data)
+                return result['encoding'] or 'utf-8'
+        except ImportError:
+            # Fallback without chardet
+            encodings = ['utf-8', 'gbk', 'gb2312', 'latin1']
+            for encoding in encodings:
+                try:
+                    with open(file_path, 'r', encoding=encoding) as f:
+                        f.read(1024)  # Try to read first 1KB
+                        return encoding
+                except (UnicodeDecodeError, UnicodeError):
+                    continue
+            return 'utf-8'  # Final fallback
+        except Exception:
+            return 'utf-8'
     
     def _compress_image(self, image_data: bytes, max_size: int = 1024, quality: int = 75) -> tuple[bytes, str]:
         """
@@ -607,7 +703,7 @@ class FeedbackTextEdit(QTextEdit):
                 compression_ratio = (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
                 
                 parent._show_image_notification(image_entry['filename'], compression_ratio)
-                parent._update_image_previews()
+                parent._update_file_previews()
                 
         except Exception as e:
             print(f"Error handling image paste: {e}")
@@ -687,18 +783,92 @@ class FeedbackTextEdit(QTextEdit):
                 compression_ratio = (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
                 
                 parent._show_image_notification(final_filename, compression_ratio)
-                parent._update_image_previews()
+                parent._update_file_previews()
                 
         except Exception as e:
             print(f"Error handling image file: {e}")
+
+    def _handle_text_file(self, file_path: str):
+        """Handle text file dropped or selected."""
+        try:
+            # Check text file limit (maximum 5 text files)
+            if len(self.text_files) >= 5:
+                parent = self.parent()
+                while parent and not isinstance(parent, FeedbackUI):
+                    parent = parent.parent()
+                if parent:
+                    parent._show_error_message("max_text_files_reached")
+                return
+            
+            # Check file size (5MB limit for text files)
+            file_size = os.path.getsize(file_path)
+            if file_size > 5 * 1024 * 1024:  # 5MB
+                parent = self.parent()
+                while parent and not isinstance(parent, FeedbackUI):
+                    parent = parent.parent()
+                if parent:
+                    parent._show_error_message("text_file_too_large")
+                return
+            
+            # Detect encoding and read file content
+            encoding = self._detect_encoding(file_path)
+            try:
+                with open(file_path, 'r', encoding=encoding) as f:
+                    content = f.read()
+            except UnicodeDecodeError:
+                # Fallback to utf-8 with error handling
+                with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+                    content = f.read()
+                encoding = 'utf-8'
+            
+            # Create text file entry
+            filename = os.path.basename(file_path)
+            text_file_entry = {
+                "filename": filename,
+                "content": content,
+                "path": os.path.abspath(file_path),
+                "size": file_size,
+                "encoding": encoding
+            }
+            
+            self.text_files.append(text_file_entry)
+            
+            # Insert placeholder text with proper formatting
+            placeholder = f"[代码文件: {filename}]"
+            cursor = self.textCursor()
+            # If not at the beginning of a line, add a newline before
+            if cursor.positionInBlock() > 0:
+                self.insertPlainText("\n")
+            self.insertPlainText(placeholder)
+            # Add a newline after the placeholder
+            self.insertPlainText("\n")
+            
+            # Get parent FeedbackUI to show notification and update previews
+            parent = self.parent()
+            while parent and not isinstance(parent, FeedbackUI):
+                parent = parent.parent()
+            if parent:
+                parent._show_text_file_notification(filename, file_size)
+                parent._update_file_previews()
+                
+        except Exception as e:
+            print(f"Error handling text file: {e}")
 
     def get_images(self) -> list[dict]:
         """Get all images as list of dicts."""
         return self.images.copy()
 
+    def get_text_files(self) -> list[dict]:
+        """Get all text files as list of dicts."""
+        return self.text_files.copy()
+
     def clear_images(self):
         """Clear all images."""
         self.images.clear()
+    
+    def clear_text_files(self):
+        """Clear all text files."""
+        self.text_files.clear()
     
     def _remove_image(self, image_data: dict):
         """Remove a specific image from the list."""
@@ -720,7 +890,29 @@ class FeedbackTextEdit(QTextEdit):
             while parent and not isinstance(parent, FeedbackUI):
                 parent = parent.parent()
             if parent:
-                parent._update_image_previews()
+                parent._update_file_previews()
+    
+    def _remove_text_file(self, text_file_data: dict):
+        """Remove a specific text file from the list."""
+        if text_file_data in self.text_files:
+            self.text_files.remove(text_file_data)
+            
+            # Remove placeholder text from the text edit
+            text = self.toPlainText()
+            placeholder = f"[代码文件: {text_file_data['filename']}]"
+            # Remove the placeholder and clean up extra whitespace
+            updated_text = text.replace(placeholder, "")
+            # Clean up multiple consecutive newlines
+            updated_text = re.sub(r'\n\s*\n\s*\n', '\n\n', updated_text)
+            updated_text = updated_text.strip()
+            self.setPlainText(updated_text)
+            
+            # Notify parent to update preview
+            parent = self.parent()
+            while parent and not isinstance(parent, FeedbackUI):
+                parent = parent.parent()
+            if parent:
+                parent._update_file_previews()
 
 
 class LogSignals(QObject):
@@ -842,9 +1034,10 @@ class FeedbackUI(QMainWindow):
         # Project path display management
         self.show_full_path = False  # Default to show project name only
         
-        # Image management
+        # File management
         self.images = []
-        self.image_preview_widgets = []
+        self.text_files = []
+        self.file_preview_widgets = []
 
         self._create_ui()  # self.config is used here to set initial values
 
@@ -1118,35 +1311,35 @@ class FeedbackUI(QMainWindow):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
         
-        # Add image button
-        self.add_image_button = QPushButton(self.text_manager.get_text('buttons', 'add_image'))
-        self.add_image_button.setProperty("class", "secondary")
-        self.add_image_button.clicked.connect(self._add_image)
-        self.add_image_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        # Add file button (images and text files)
+        self.add_file_button = QPushButton(self.text_manager.get_text('buttons', 'add_file'))
+        self.add_file_button.setProperty("class", "secondary")
+        self.add_file_button.clicked.connect(self._add_file)
+        self.add_file_button.setCursor(Qt.CursorShape.PointingHandCursor)
 
         
         self.submit_button = QPushButton(self.text_manager.get_text('buttons', 'send_feedback'))
         self.submit_button.clicked.connect(self._submit_feedback)
         self.submit_button.setCursor(Qt.CursorShape.PointingHandCursor)
         
-        button_layout.addWidget(self.add_image_button)
+        button_layout.addWidget(self.add_file_button)
         button_layout.addStretch()
         button_layout.addWidget(self.submit_button)
 
         feedback_layout.addWidget(self.feedback_text)
         feedback_layout.addLayout(quick_reply_container)
         
-        # Image preview area (horizontal flex layout, no scroll)
-        self.image_preview_container = QWidget()
-        self.image_preview_container.setVisible(False)  # Initially hidden
-        self.image_preview_container.setProperty("class", "image-preview-container")
+        # File preview area (horizontal flex layout, no scroll)
+        self.file_preview_container = QWidget()
+        self.file_preview_container.setVisible(False)  # Initially hidden
+        self.file_preview_container.setProperty("class", "file-preview-container")
         
-        self.image_layout = QHBoxLayout(self.image_preview_container)
-        self.image_layout.setContentsMargins(12, 8, 12, 8)
-        self.image_layout.setSpacing(12)
-        self.image_layout.setAlignment(Qt.AlignLeft)
+        self.file_layout = QHBoxLayout(self.file_preview_container)
+        self.file_layout.setContentsMargins(12, 8, 12, 8)
+        self.file_layout.setSpacing(12)
+        self.file_layout.setAlignment(Qt.AlignLeft)
         
-        feedback_layout.addWidget(self.image_preview_container)
+        feedback_layout.addWidget(self.file_preview_container)
         
         feedback_layout.addLayout(button_layout)
 
@@ -1378,23 +1571,65 @@ class FeedbackUI(QMainWindow):
                 self.raise_()
                 self.activateWindow()
     
-    def _add_image(self):
-        """Open file dialog to select an image."""
-        # Check image limit before opening dialog
-        if len(self.feedback_text.get_images()) >= 5:
-            self._show_error_message("max_images_reached")
+    def _add_file(self):
+        """Open file dialog to select a file (image or text)."""
+        # Check file limits before opening dialog
+        images_count = len(self.feedback_text.get_images())
+        text_files_count = len(self.feedback_text.get_text_files())
+        
+        if images_count >= 5 and text_files_count >= 5:
+            self._show_error_message("max_files_reached")
             return
         
         file_dialog = QFileDialog(self)
-        file_dialog.setWindowTitle(self.text_manager.get_text('messages', 'select_image_file'))
+        file_dialog.setWindowTitle(self.text_manager.get_text('messages', 'select_file'))
         file_dialog.setFileMode(QFileDialog.ExistingFile)
-        file_dialog.setNameFilter("Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp)")
+        
+        # Comprehensive file filter
+        file_filter = (
+            "All Supported Files ("
+            "*.png *.jpg *.jpeg *.gif *.bmp *.webp "  # Images
+            "*.py *.pyw *.pyi *.js *.jsx *.ts *.tsx *.mjs *.cjs "  # Python, JavaScript/TypeScript
+            "*.java *.c *.cpp *.cxx *.cc *.h *.hpp *.hxx *.cs *.csx "  # Java, C/C++, C#
+            "*.go *.rs *.swift *.kt *.kts *.scala *.sc *.rb *.rbw "  # Go, Rust, Swift, Kotlin, Scala, Ruby
+            "*.php *.phtml *.pl *.pm *.r *.R *.m *.lua *.dart *.mm "  # PHP, Perl, R, MATLAB, Lua, Dart, Objective-C++
+            "*.html *.htm *.xhtml *.css *.scss *.sass *.less *.styl "  # Web files
+            "*.xml *.xsl *.xsd *.json *.jsonc *.yaml *.yml *.toml "  # Data files
+            "*.sh *.bash *.zsh *.fish *.ps1 *.bat *.cmd *.sql *.graphql *.gql "  # Scripts
+            "*.md *.markdown *.mdown *.mdx *.rst *.tex *.cls *.sty *.txt *.text *.log "  # Documents
+            "*.ini *.cfg *.conf *.properties *.env *.environment "  # Config files
+            ");;"
+            "Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp);;"
+            "Source Code ("
+            "*.py *.pyw *.pyi *.js *.jsx *.ts *.tsx *.mjs *.cjs *.java *.c *.cpp *.cxx *.cc *.h *.hpp *.hxx "
+            "*.cs *.csx *.go *.rs *.swift *.kt *.kts *.scala *.sc *.rb *.rbw *.php *.phtml *.pl *.pm "
+            "*.r *.R *.m *.lua *.dart *.mm"
+            ");;"
+            "Web Files (*.html *.htm *.xhtml *.css *.scss *.sass *.less *.styl *.xml *.xsl *.xsd *.json *.jsonc *.yaml *.yml *.toml);;"
+            "Scripts (*.sh *.bash *.zsh *.fish *.ps1 *.bat *.cmd *.sql *.graphql *.gql);;"
+            "Documents (*.md *.markdown *.mdown *.mdx *.rst *.tex *.cls *.sty *.txt *.text *.log);;"
+            "Config Files (*.ini *.cfg *.conf *.properties *.env *.environment)"
+        )
+        
+        file_dialog.setNameFilter(file_filter)
         
         if file_dialog.exec():
             selected_files = file_dialog.selectedFiles()
             if selected_files:
                 file_path = selected_files[0]
-                self.feedback_text._handle_image_file(file_path)
+                # Automatically detect file type and handle accordingly
+                if self.feedback_text._is_image_file(file_path):
+                    if images_count >= 5:
+                        self._show_error_message("max_images_reached")
+                        return
+                    self.feedback_text._handle_image_file(file_path)
+                elif self.feedback_text._is_text_file(file_path):
+                    if text_files_count >= 5:
+                        self._show_error_message("max_text_files_reached")
+                        return
+                    self.feedback_text._handle_text_file(file_path)
+                else:
+                    self._show_error_message("unsupported_file_type")
     
     def _show_image_notification(self, filename: str, compression_ratio: float = 0):
         """Show notification that image was added with compression info."""
@@ -1407,47 +1642,70 @@ class FeedbackUI(QMainWindow):
             message = self.text_manager.get_text('messages', 'image_added', filename=filename)
         self.show_notification_banner(message)
     
+    def _show_text_file_notification(self, filename: str, file_size: int):
+        """Show notification that text file was added."""
+        # Format file size
+        if file_size < 1024:
+            size_str = f"{file_size} B"
+        elif file_size < 1024 * 1024:
+            size_str = f"{file_size / 1024:.1f} KB"
+        else:
+            size_str = f"{file_size / (1024 * 1024):.1f} MB"
+        
+        if self.text_manager.get_current_language() == 'zh':
+            message = f"代码文件已添加: {filename} ({size_str})"
+        else:
+            message = f"Text file added: {filename} ({size_str})"
+        self.show_notification_banner(message)
+    
     def _show_error_message(self, error_key: str):
         """Show error message dialog."""
         error_message = self.text_manager.get_text('messages', error_key)
         QMessageBox.warning(self, "Error", error_message)
     
-    def _update_image_previews(self):
-        """Update the image preview area with horizontal flex-like layout."""
+    def _update_file_previews(self):
+        """Update the file preview area with horizontal flex-like layout."""
         # Clear existing preview widgets
-        for widget in self.image_preview_widgets:
-            self.image_layout.removeWidget(widget)
+        for widget in self.file_preview_widgets:
+            self.file_layout.removeWidget(widget)
             widget.setParent(None)
             widget.deleteLater()
-        self.image_preview_widgets.clear()
+        self.file_preview_widgets.clear()
         
         # Clear all items from layout
-        while self.image_layout.count():
-            item = self.image_layout.takeAt(0)
+        while self.file_layout.count():
+            item = self.file_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
             elif item.spacerItem():
                 # Remove spacer items
                 pass
         
-        # Get current images from feedback_text
+        # Get current files from feedback_text
         images = self.feedback_text.get_images()
+        text_files = self.feedback_text.get_text_files()
         
-        if images:
+        if images or text_files:
             # Show preview container
-            self.image_preview_container.setVisible(True)
+            self.file_preview_container.setVisible(True)
             
             # Add image preview widgets in horizontal layout
             for image_data in images:
                 preview_widget = ImagePreviewWidget(image_data, self)
-                self.image_layout.addWidget(preview_widget)
-                self.image_preview_widgets.append(preview_widget)
+                self.file_layout.addWidget(preview_widget)
+                self.file_preview_widgets.append(preview_widget)
+            
+            # Add text file preview widgets in horizontal layout
+            for text_file_data in text_files:
+                preview_widget = TextFilePreviewWidget(text_file_data, self)
+                self.file_layout.addWidget(preview_widget)
+                self.file_preview_widgets.append(preview_widget)
             
             # Add stretch to push items to the left (flex-start behavior)
-            self.image_layout.addStretch()
+            self.file_layout.addStretch()
         else:
-            # Hide preview container if no images
-            self.image_preview_container.setVisible(False)
+            # Hide preview container if no files
+            self.file_preview_container.setVisible(False)
 
 
 
@@ -1589,7 +1847,8 @@ class FeedbackUI(QMainWindow):
         self.feedback_result = FeedbackResult(
             logs="".join(self.log_buffer),
             interactive_feedback=self.feedback_text.toPlainText().strip(),
-            images=self.feedback_text.get_images()
+            images=self.feedback_text.get_images(),
+            text_files=self.feedback_text.get_text_files()
         )
         self.close()
 
@@ -1647,7 +1906,7 @@ class FeedbackUI(QMainWindow):
             kill_tree(self.process)
 
         if not self.feedback_result:
-            return FeedbackResult(logs="".join(self.log_buffer), interactive_feedback="", images=[])
+            return FeedbackResult(logs="".join(self.log_buffer), interactive_feedback="", images=[], text_files=[])
 
         return self.feedback_result
 
