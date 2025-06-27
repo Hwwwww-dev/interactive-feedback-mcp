@@ -2,20 +2,23 @@
 # Developed by Fábio Ferreira (https://x.com/fabiomlferreira)
 # Inspired by/related to dotcursorrules.com (https://dotcursorrules.com/)
 import argparse
+import base64
 import hashlib
 import json
+import mimetypes
 import os
+import re
 import subprocess
 import sys
 import threading
 from typing import Optional, TypedDict
 
 import psutil
-from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings, QMimeData
-from PySide6.QtGui import QTextCursor, QIcon, QKeyEvent, QFont, QFontDatabase, QPalette, QColor
+from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings, QMimeData, QUrl
+from PySide6.QtGui import QTextCursor, QIcon, QKeyEvent, QFont, QFontDatabase, QPalette, QColor, QPixmap, QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QCheckBox, QTextEdit, QGroupBox, QGridLayout
+    QLabel, QLineEdit, QPushButton, QCheckBox, QTextEdit, QGroupBox, QGridLayout, QFileDialog, QMessageBox, QScrollArea, QFrame, QSizePolicy
 )
 
 # Import bilingual text manager
@@ -25,6 +28,7 @@ from i18n import get_text_manager
 class FeedbackResult(TypedDict):
     command_logs: str
     interactive_feedback: str
+    images: list[dict]  # List of {"filename": str, "data": str (base64)}
 
 
 class FeedbackConfig(TypedDict):
@@ -274,13 +278,184 @@ def get_user_environment() -> dict[str, str]:
         CloseHandle(token)
 
 
+class ImagePreviewWidget(QWidget):
+    """Modern widget to display image preview with elegant design inspired by Cursor."""
+    
+    def __init__(self, image_data: dict, parent=None):
+        super().__init__(parent)
+        self.image_data = image_data
+        self.parent_ui = parent
+        self._setup_ui()
+    
+    def _setup_ui(self):
+        # Use a fixed size for the entire widget to ensure consistent layout
+        self.setFixedSize(140, 32)  # Optimal tab size
+        
+        # Main container with relative positioning
+        container = QWidget(self)
+        container.setGeometry(0, 0, 140, 32)
+        container.setProperty("class", "image-tab")
+        
+        # Create layout for container
+        layout = QHBoxLayout(container)
+        layout.setContentsMargins(8, 6, 8, 6)  # Equal margins
+        layout.setSpacing(6)
+        
+        # Small icon/thumbnail (16x16 like in Cursor)
+        self.image_icon = QLabel()
+        self.image_icon.setFixedSize(16, 16)
+        self.image_icon.setScaledContents(True)
+        self.image_icon.setProperty("class", "image-tab-icon")
+        
+        # Load small icon
+        self._load_tab_icon()
+        
+        # Filename label (truncated to fit tab)
+        self.filename_label = QLabel(self._get_tab_filename())
+        self.filename_label.setProperty("class", "image-tab-filename")
+        self.filename_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.filename_label.setToolTip(self.image_data['filename'])  # Full name on hover
+        
+        # Close button as part of layout (centered vertically)
+        self.close_button = QPushButton("×")
+        self.close_button.setProperty("class", "image-tab-close")
+        self.close_button.setFixedSize(18, 18)
+        self.close_button.setToolTip(self.parent_ui.text_manager.get_text('messages', 'remove_image') if self.parent_ui else "Remove Image")
+        self.close_button.clicked.connect(self._remove_image)
+        self.close_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        
+        # Add widgets to layout in order: icon, filename, close button
+        layout.addWidget(self.image_icon)
+        layout.addWidget(self.filename_label)
+        layout.addWidget(self.close_button)
+        
+        # Initially hide close button, show on hover
+        self.close_button.setVisible(False)
+        
+        # Enable mouse tracking for hover effects
+        self.setMouseTracking(True)
+        container.setMouseTracking(True)
+        
+        # Make sure all child widgets track mouse events and forward them to parent
+        self.image_icon.setMouseTracking(True)
+        self.filename_label.setMouseTracking(True)
+        self.close_button.setMouseTracking(True)
+        
+        # Connect child widget events to parent
+        def forward_enter_event(event):
+            self.enterEvent(event)
+        
+        def forward_leave_event(event):
+            self.leaveEvent(event)
+        
+        # Override child widget enter/leave events
+        self.image_icon.enterEvent = forward_enter_event
+        self.image_icon.leaveEvent = forward_leave_event
+        self.filename_label.enterEvent = forward_enter_event
+        self.filename_label.leaveEvent = forward_leave_event
+        container.enterEvent = forward_enter_event
+        container.leaveEvent = forward_leave_event
+    
+    def _get_tab_filename(self):
+        """Get a tab-friendly filename with smart truncation for fixed-width tabs."""
+        filename = self.image_data['filename']
+        # For 140px tab width with icon and close button, we have about 70px for text (roughly 9-10 chars)
+        if len(filename) > 10:
+            name, ext = os.path.splitext(filename)
+            if len(name) > 7:
+                return f"{name[:7]}...{ext}"
+        return filename
+    
+    def _get_display_filename(self):
+        """Get a display-friendly filename with smart truncation."""
+        filename = self.image_data['filename']
+        if len(filename) > 16:
+            name, ext = os.path.splitext(filename)
+            if len(name) > 12:
+                return f"{name[:12]}...{ext}"
+        return filename
+    
+    def _get_file_size(self):
+        """Calculate and format file size from base64 data."""
+        try:
+            data_url = self.image_data['data']
+            if data_url.startswith('data:image/'):
+                # Extract base64 data
+                header, base64_data = data_url.split(',', 1)
+                # Calculate approximate file size (base64 is ~33% larger than original)
+                base64_size = len(base64_data)
+                original_size = int(base64_size * 0.75)
+                
+                if original_size < 1024:
+                    return f"{original_size} B"
+                elif original_size < 1024 * 1024:
+                    return f"{original_size / 1024:.1f} KB"
+                else:
+                    return f"{original_size / (1024 * 1024):.1f} MB"
+        except Exception:
+            pass
+        return "Unknown"
+    
+    def _load_tab_icon(self):
+        """Load and display a small 16x16 icon for the tab."""
+        try:
+            # Extract base64 data
+            data_url = self.image_data['data']
+            if data_url.startswith('data:image/'):
+                # Split data URL: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...
+                header, base64_data = data_url.split(',', 1)
+                image_bytes = base64.b64decode(base64_data)
+                
+                # Create QPixmap from bytes
+                pixmap = QPixmap()
+                pixmap.loadFromData(image_bytes)
+                
+                if not pixmap.isNull():
+                    # Scale to small 16x16 icon
+                    icon_pixmap = pixmap.scaled(
+                        16, 16, 
+                        Qt.KeepAspectRatio, 
+                        Qt.SmoothTransformation
+                    )
+                    self.image_icon.setPixmap(icon_pixmap)
+                else:
+                    # Use a generic image icon
+                    self.image_icon.setText("🖼")
+                    self.image_icon.setAlignment(Qt.AlignCenter)
+            else:
+                self.image_icon.setText("🖼")
+                self.image_icon.setAlignment(Qt.AlignCenter)
+        except Exception as e:
+            print(f"Error loading image icon: {e}")
+            self.image_icon.setText("🖼")
+            self.image_icon.setAlignment(Qt.AlignCenter)
+    
+
+    
+    def enterEvent(self, event):
+        """Show close button on mouse enter."""
+        self.close_button.setVisible(True)
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event):
+        """Hide close button on mouse leave."""
+        self.close_button.setVisible(False)
+        super().leaveEvent(event)
+    
+    def _remove_image(self):
+        """Remove this image from the parent widget with smooth animation."""
+        if self.parent_ui and hasattr(self.parent_ui, 'feedback_text'):
+            self.parent_ui.feedback_text._remove_image(self.image_data)
+
+
 class FeedbackTextEdit(QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.images = []  # Store image data as list of dicts
 
     def keyPressEvent(self, event: QKeyEvent):
         if (event.key() == Qt.Key_Return and event.modifiers() == Qt.ControlModifier):
-            # (event.key() == Qt.Key_Return and event.modifiers() == Qt.ShiftModifier):
             # Find the parent FeedbackUI instance and call submit
             parent = self.parent()
             while parent and not isinstance(parent, FeedbackUI):
@@ -292,11 +467,194 @@ class FeedbackTextEdit(QTextEdit):
 
     def insertFromMimeData(self, source: QMimeData) -> None:
         """
-        Override to ensure only plain text is pasted.
+        Override to handle both text and image pasting.
         """
-        if source.hasText():
+        if source.hasImage():
+            # Handle image from clipboard
+            image = source.imageData()
+            if image and not image.isNull():
+                self._handle_image_paste(image)
+        elif source.hasText():
             self.insertPlainText(source.text())
-        # If not plain text, do nothing (discard other formats)
+        # If not text or image, do nothing
+
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        """Handle drag enter events for files."""
+        if event.mimeData().hasUrls():
+            # Check if any of the URLs are image files
+            for url in event.mimeData().urls():
+                if url.isLocalFile():
+                    file_path = url.toLocalFile()
+                    if self._is_image_file(file_path):
+                        event.acceptProposedAction()
+                        return
+        super().dragEnterEvent(event)
+
+    def dropEvent(self, event: QDropEvent):
+        """Handle drop events for image files."""
+        if event.mimeData().hasUrls():
+            for url in event.mimeData().urls():
+                if url.isLocalFile():
+                    file_path = url.toLocalFile()
+                    if self._is_image_file(file_path):
+                        self._handle_image_file(file_path)
+                        event.acceptProposedAction()
+                        return
+        super().dropEvent(event)
+
+    def _is_image_file(self, file_path: str) -> bool:
+        """Check if file is a supported image format."""
+        mime_type, _ = mimetypes.guess_type(file_path)
+        return mime_type and mime_type.startswith('image/')
+
+    def _handle_image_paste(self, image: QPixmap):
+        """Handle image pasted from clipboard."""
+        try:
+            # Check image limit (maximum 5 images)
+            if len(self.images) >= 5:
+                parent = self.parent()
+                while parent and not isinstance(parent, FeedbackUI):
+                    parent = parent.parent()
+                if parent:
+                    parent._show_error_message("max_images_reached")
+                return
+            
+            # Convert QPixmap to base64
+            from PySide6.QtCore import QBuffer, QIODevice
+            from PySide6.QtGui import QPixmap
+            
+            buffer = QBuffer()
+            buffer.open(QIODevice.WriteOnly)
+            image.save(buffer, "PNG")
+            image_data = buffer.data().data()
+            base64_data = base64.b64encode(image_data).decode('utf-8')
+            
+            # Create image entry
+            image_entry = {
+                "filename": f"clipboard_image_{len(self.images) + 1}.png",
+                "data": f"data:image/png;base64,{base64_data}"
+            }
+            
+            self.images.append(image_entry)
+            
+            # Insert placeholder text with proper formatting
+            placeholder = f"[图片: {image_entry['filename']}]"
+            cursor = self.textCursor()
+            # If not at the beginning of a line, add a newline before
+            if cursor.positionInBlock() > 0:
+                self.insertPlainText("\n")
+            self.insertPlainText(placeholder)
+            # Add a newline after the placeholder
+            self.insertPlainText("\n")
+            
+            # Get parent FeedbackUI to show notification and update previews
+            parent = self.parent()
+            while parent and not isinstance(parent, FeedbackUI):
+                parent = parent.parent()
+            if parent:
+                parent._show_image_notification(image_entry['filename'])
+                parent._update_image_previews()
+                
+        except Exception as e:
+            print(f"Error handling image paste: {e}")
+
+    def _handle_image_file(self, file_path: str):
+        """Handle image file dropped or selected."""
+        try:
+            # Check image limit (maximum 5 images)
+            if len(self.images) >= 5:
+                parent = self.parent()
+                while parent and not isinstance(parent, FeedbackUI):
+                    parent = parent.parent()
+                if parent:
+                    parent._show_error_message("max_images_reached")
+                return
+            
+            # Check file size (10MB limit)
+            file_size = os.path.getsize(file_path)
+            if file_size > 10 * 1024 * 1024:  # 10MB
+                parent = self.parent()
+                while parent and not isinstance(parent, FeedbackUI):
+                    parent = parent.parent()
+                if parent:
+                    parent._show_error_message("image_too_large")
+                return
+            
+            # Read and encode image
+            with open(file_path, 'rb') as f:
+                image_data = f.read()
+            
+            base64_data = base64.b64encode(image_data).decode('utf-8')
+            
+            # Determine MIME type
+            mime_type, _ = mimetypes.guess_type(file_path)
+            if not mime_type or not mime_type.startswith('image/'):
+                parent = self.parent()
+                while parent and not isinstance(parent, FeedbackUI):
+                    parent = parent.parent()
+                if parent:
+                    parent._show_error_message("invalid_image_format")
+                return
+            
+            # Create image entry
+            filename = os.path.basename(file_path)
+            image_entry = {
+                "filename": filename,
+                "data": f"data:{mime_type};base64,{base64_data}"
+            }
+            
+            self.images.append(image_entry)
+            
+            # Insert placeholder text with proper formatting
+            placeholder = f"[图片: {filename}]"
+            cursor = self.textCursor()
+            # If not at the beginning of a line, add a newline before
+            if cursor.positionInBlock() > 0:
+                self.insertPlainText("\n")
+            self.insertPlainText(placeholder)
+            # Add a newline after the placeholder
+            self.insertPlainText("\n")
+            
+            # Get parent FeedbackUI to show notification and update previews
+            parent = self.parent()
+            while parent and not isinstance(parent, FeedbackUI):
+                parent = parent.parent()
+            if parent:
+                parent._show_image_notification(filename)
+                parent._update_image_previews()
+                
+        except Exception as e:
+            print(f"Error handling image file: {e}")
+
+    def get_images(self) -> list[dict]:
+        """Get all images as list of dicts."""
+        return self.images.copy()
+
+    def clear_images(self):
+        """Clear all images."""
+        self.images.clear()
+    
+    def _remove_image(self, image_data: dict):
+        """Remove a specific image from the list."""
+        if image_data in self.images:
+            self.images.remove(image_data)
+            
+            # Remove placeholder text from the text edit
+            text = self.toPlainText()
+            placeholder = f"[图片: {image_data['filename']}]"
+            # Remove the placeholder and clean up extra whitespace
+            updated_text = text.replace(placeholder, "")
+            # Clean up multiple consecutive newlines
+            updated_text = re.sub(r'\n\s*\n\s*\n', '\n\n', updated_text)
+            updated_text = updated_text.strip()
+            self.setPlainText(updated_text)
+            
+            # Notify parent to update preview
+            parent = self.parent()
+            while parent and not isinstance(parent, FeedbackUI):
+                parent = parent.parent()
+            if parent:
+                parent._update_image_previews()
 
 
 class LogSignals(QObject):
@@ -414,6 +772,10 @@ class FeedbackUI(QMainWindow):
         
         # Stay on top management
         self.stay_on_top = self.settings.value("stay_on_top", False, type=bool)
+        
+        # Image management
+        self.images = []
+        self.image_preview_widgets = []
 
         self._create_ui()  # self.config is used here to set initial values
 
@@ -663,13 +1025,41 @@ class FeedbackUI(QMainWindow):
         
         quick_reply_container.addLayout(quick_grid)
         
+        # Image and submit button layout
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+        
+        # Add image button
+        self.add_image_button = QPushButton(self.text_manager.get_text('buttons', 'add_image'))
+        self.add_image_button.setProperty("class", "secondary")
+        self.add_image_button.clicked.connect(self._add_image)
+        self.add_image_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.add_image_button.setToolTip(self.text_manager.get_tooltip('add_image'))
+        
         self.submit_button = QPushButton(self.text_manager.get_text('buttons', 'send_feedback'))
         self.submit_button.clicked.connect(self._submit_feedback)
         self.submit_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        
+        button_layout.addWidget(self.add_image_button)
+        button_layout.addStretch()
+        button_layout.addWidget(self.submit_button)
 
         feedback_layout.addWidget(self.feedback_text)
         feedback_layout.addLayout(quick_reply_container)
-        feedback_layout.addWidget(self.submit_button)
+        
+        # Image preview area (horizontal flex layout, no scroll)
+        self.image_preview_container = QWidget()
+        self.image_preview_container.setVisible(False)  # Initially hidden
+        self.image_preview_container.setProperty("class", "image-preview-container")
+        
+        self.image_layout = QHBoxLayout(self.image_preview_container)
+        self.image_layout.setContentsMargins(12, 8, 12, 8)
+        self.image_layout.setSpacing(12)
+        self.image_layout.setAlignment(Qt.AlignLeft)
+        
+        feedback_layout.addWidget(self.image_preview_container)
+        
+        feedback_layout.addLayout(button_layout)
 
         # Set minimum height for feedback_group to accommodate its contents
         # This will be based on the section title, description label and the 3-line feedback_text
@@ -798,6 +1188,10 @@ class FeedbackUI(QMainWindow):
         if hasattr(self, 'stay_on_top_button'):
             self.update_stay_on_top_tooltip()
         
+        # Update add image button tooltip
+        if hasattr(self, 'add_image_button'):
+            self.add_image_button.setToolTip(self.text_manager.get_tooltip('add_image'))
+        
         # Show top notification banner
         if new_lang == 'zh':
             message = "语言已切换到中文，下次启动时界面将显示中文。"
@@ -906,6 +1300,71 @@ class FeedbackUI(QMainWindow):
                 # Additional raise for macOS
                 self.raise_()
                 self.activateWindow()
+    
+    def _add_image(self):
+        """Open file dialog to select an image."""
+        # Check image limit before opening dialog
+        if len(self.feedback_text.get_images()) >= 5:
+            self._show_error_message("max_images_reached")
+            return
+        
+        file_dialog = QFileDialog(self)
+        file_dialog.setWindowTitle(self.text_manager.get_text('messages', 'select_image_file'))
+        file_dialog.setFileMode(QFileDialog.ExistingFile)
+        file_dialog.setNameFilter("Images (*.png *.jpg *.jpeg *.gif *.bmp *.webp)")
+        
+        if file_dialog.exec():
+            selected_files = file_dialog.selectedFiles()
+            if selected_files:
+                file_path = selected_files[0]
+                self.feedback_text._handle_image_file(file_path)
+    
+    def _show_image_notification(self, filename: str):
+        """Show notification that image was added."""
+        message = self.text_manager.get_text('messages', 'image_added', filename=filename)
+        self.show_notification_banner(message)
+    
+    def _show_error_message(self, error_key: str):
+        """Show error message dialog."""
+        error_message = self.text_manager.get_text('messages', error_key)
+        QMessageBox.warning(self, "Error", error_message)
+    
+    def _update_image_previews(self):
+        """Update the image preview area with horizontal flex-like layout."""
+        # Clear existing preview widgets
+        for widget in self.image_preview_widgets:
+            self.image_layout.removeWidget(widget)
+            widget.setParent(None)
+            widget.deleteLater()
+        self.image_preview_widgets.clear()
+        
+        # Clear all items from layout
+        while self.image_layout.count():
+            item = self.image_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+            elif item.spacerItem():
+                # Remove spacer items
+                pass
+        
+        # Get current images from feedback_text
+        images = self.feedback_text.get_images()
+        
+        if images:
+            # Show preview container
+            self.image_preview_container.setVisible(True)
+            
+            # Add image preview widgets in horizontal layout
+            for image_data in images:
+                preview_widget = ImagePreviewWidget(image_data, self)
+                self.image_layout.addWidget(preview_widget)
+                self.image_preview_widgets.append(preview_widget)
+            
+            # Add stretch to push items to the left (flex-start behavior)
+            self.image_layout.addStretch()
+        else:
+            # Hide preview container if no images
+            self.image_preview_container.setVisible(False)
 
 
 
@@ -1047,6 +1506,7 @@ class FeedbackUI(QMainWindow):
         self.feedback_result = FeedbackResult(
             logs="".join(self.log_buffer),
             interactive_feedback=self.feedback_text.toPlainText().strip(),
+            images=self.feedback_text.get_images()
         )
         self.close()
 
@@ -1104,7 +1564,7 @@ class FeedbackUI(QMainWindow):
             kill_tree(self.process)
 
         if not self.feedback_result:
-            return FeedbackResult(logs="".join(self.log_buffer), interactive_feedback="")
+            return FeedbackResult(logs="".join(self.log_buffer), interactive_feedback="", images=[])
 
         return self.feedback_result
 

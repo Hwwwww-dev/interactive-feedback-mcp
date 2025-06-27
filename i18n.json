@@ -37,7 +37,8 @@
             "language_zh": "🇨🇳",
             "language_en": "🇺🇸",
             "stay_on_top_on": "📌",
-            "stay_on_top_off": "📌"
+            "stay_on_top_off": "📌",
+            "add_image": "🖼️"
         },
         "en": {
             "command_section": "Command Section",
@@ -54,7 +55,8 @@
             "language_zh": "🇨🇳",
             "language_en": "🇺🇸",
             "stay_on_top_on": "📌",
-            "stay_on_top_off": "📌"
+            "stay_on_top_off": "📌",
+            "add_image": "🖼️"
         }
     },
     "labels": {
@@ -76,11 +78,13 @@
     "tooltips": {
         "zh": {
             "stay_on_top_on": "取消置顶",
-            "stay_on_top_off": "窗口置顶"
+            "stay_on_top_off": "窗口置顶",
+            "add_image": "添加图片"
         },
         "en": {
             "stay_on_top_on": "Unpin window",
-            "stay_on_top_off": "Pin window on top"
+            "stay_on_top_off": "Pin window on top",
+            "add_image": "Add image"
         }
     },
     "placeholders": {
@@ -121,14 +125,26 @@
             "enter_command": "请输入要运行的命令\n",
             "command_running": "$ {command}\n",
             "error_running_command": "运行命令时出错: {error}\n",
-            "config_saved": "项目配置已保存。\n"
+            "config_saved": "项目配置已保存。\n",
+            "image_added": "图片已添加: {filename}",
+            "image_too_large": "图片文件太大，请选择小于10MB的图片",
+            "invalid_image_format": "不支持的图片格式，请选择PNG、JPG、GIF或BMP格式",
+            "max_images_reached": "最多只能添加5张图片",
+            "select_image_file": "选择图片文件",
+            "remove_image": "移除图片"
         },
         "en": {
             "process_exited": "\nProcess exited with code {code}\n",
             "enter_command": "Please enter a command to run\n",
             "command_running": "$ {command}\n",
             "error_running_command": "Error running command: {error}\n",
-            "config_saved": "Configuration saved for this project.\n"
+            "config_saved": "Configuration saved for this project.\n",
+            "image_added": "Image added: {filename}",
+            "image_too_large": "Image file is too large, please select an image smaller than 10MB",
+            "invalid_image_format": "Unsupported image format, please select PNG, JPG, GIF or BMP format",
+            "max_images_reached": "Maximum 5 images allowed",
+            "select_image_file": "Select Image File",
+            "remove_image": "Remove Image"
         }
     }
 }
