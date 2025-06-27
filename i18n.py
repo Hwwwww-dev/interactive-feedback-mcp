@@ -138,33 +138,7 @@ class I18NManager:
         except KeyError:
             return self.texts["quick_replies"]["en"]
     
-    def get_tooltip(self, key: str, **kwargs) -> str:
-        """
-        获取工具提示文本
-        Get tooltip text
-        
-        Args:
-            key: Tooltip key
-            **kwargs: Format parameters for the text
-            
-        Returns:
-            Localized tooltip text string
-        """
-        try:
-            text = self.texts["tooltips"][self.current_language][key]
-            if kwargs:
-                return text.format(**kwargs)
-            return text
-        except KeyError:
-            # Fallback to English if current language text not found
-            try:
-                text = self.texts["tooltips"]["en"][key]
-                if kwargs:
-                    return text.format(**kwargs)
-                return text
-            except KeyError:
-                # Last resort: return the key itself
-                return f"[tooltip.{key}]"
+
     
     def set_language(self, language: str) -> None:
         """

@@ -8,7 +8,7 @@ QMainWindow {
 QGroupBox {
     background-color: rgb(39, 39, 42);
     border: 1px solid rgb(63, 63, 70);
-    border-radius: 12px;
+    border-radius: 8px;
     font-size: 14px;
     font-weight: 600;
     color: rgb(250, 250, 250);
@@ -29,7 +29,7 @@ QPushButton {
     background-color: rgb(99, 102, 241);
     color: rgb(250, 250, 250);
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 6px 12px;
     font-size: 14px;
     font-weight: 500;
@@ -53,6 +53,7 @@ QPushButton:disabled {
 QPushButton[class="secondary"] {
     background-color: rgb(63, 63, 70);
     color: rgb(250, 250, 250);
+    border-radius: 12px;
 }
 
 QPushButton[class="secondary"]:hover {
@@ -88,7 +89,7 @@ QPushButton[class="quick-reply"]:pressed {
 QLineEdit {
     background-color: rgb(24, 24, 27);
     border: 1px solid rgb(63, 63, 70);
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 6px 10px;
     font-size: 14px;
     color: rgb(250, 250, 250);
@@ -109,7 +110,7 @@ QLineEdit:disabled {
 QTextEdit {
     background-color: rgb(24, 24, 27);
     border: 1px solid rgb(63, 63, 70);
-    border-radius: 8px;
+    border-radius: 12px;
     padding: 10px;
     font-size: 15px;
     color: rgb(250, 250, 250);
@@ -132,7 +133,7 @@ QCheckBox {
 QCheckBox::indicator {
     width: 14px;
     height: 14px;
-    border-radius: 4px;
+    border-radius: 8px;
     border: 1px solid rgb(63, 63, 70);
     background-color: rgb(24, 24, 27);
 }
@@ -161,7 +162,7 @@ QCheckBox[class="small-checkbox"] {
 QCheckBox[class="small-checkbox"]::indicator {
     width: 12px;
     height: 12px;
-    border-radius: 3px;
+    border-radius: 8px;
     border: 1px solid rgb(63, 63, 70);
     background-color: rgb(24, 24, 27);
 }
@@ -215,6 +216,8 @@ QLabel[class="notification-banner"] {
     font-weight: 500;
     font-size: 14px;
 }
+
+
 
 /* Scrollbars */
 QScrollBar:vertical {
@@ -292,7 +295,7 @@ QPushButton[class="elegant-remove-button"] {
     background-color: rgba(0, 0, 0, 0.6);
     color: white;
     border: none;
-    border-radius: 9px;
+    border-radius: 8px;
     font-size: 11px;
     font-weight: bold;
     min-width: 18px;
@@ -326,13 +329,14 @@ QWidget[class="image-tab"] {
 
 QWidget[class="image-tab"]:hover {
     background-color: rgb(52, 52, 59);
-    border: 1px solid rgb(82, 82, 91);
+    border: 1px solid rgb(99, 102, 241);
+    transform: scale(1.02);
 }
 
 QLabel[class="image-tab-icon"] {
     background-color: transparent;
     border: none;
-    border-radius: 3px;
+    border-radius: 8px;
 }
 
 QLabel[class="image-tab-filename"] {
@@ -343,21 +347,7 @@ QLabel[class="image-tab-filename"] {
     border: none;
 }
 
-QPushButton[class="image-tab-close"] {
-    background-color: rgba(0, 0, 0, 0.3);
-    color: rgb(161, 161, 170);
-    border: none;
-    border-radius: 9px;
-    font-size: 12px;
-    font-weight: bold;
-    padding: 0px;
-    margin: 0px;
-}
-
-QPushButton[class="image-tab-close"]:hover {
-    background-color: rgba(239, 68, 68, 0.9);
-    color: rgb(255, 255, 255);
-}
+/* Image tab close button styles removed - using double-click to remove */
 
 /* Horizontal Layout Spacing */
 HBoxLayout {

@@ -75,18 +75,7 @@
             "project_path": "Project Path: {path}"
         }
     },
-    "tooltips": {
-        "zh": {
-            "stay_on_top_on": "取消置顶",
-            "stay_on_top_off": "窗口置顶",
-            "add_image": "添加图片"
-        },
-        "en": {
-            "stay_on_top_on": "Unpin window",
-            "stay_on_top_off": "Pin window on top",
-            "add_image": "Add image"
-        }
-    },
+
     "placeholders": {
         "zh": {
             "command_input": "输入要运行的命令 (例如: npm test, python script.py)",
@@ -131,7 +120,8 @@
             "invalid_image_format": "不支持的图片格式，请选择PNG、JPG、GIF或BMP格式",
             "max_images_reached": "最多只能添加5张图片",
             "select_image_file": "选择图片文件",
-            "remove_image": "移除图片"
+            "remove_image": "移除图片",
+            "double_click_to_remove": "双击删除"
         },
         "en": {
             "process_exited": "\nProcess exited with code {code}\n",
@@ -144,7 +134,8 @@
             "invalid_image_format": "Unsupported image format, please select PNG, JPG, GIF or BMP format",
             "max_images_reached": "Maximum 5 images allowed",
             "select_image_file": "Select Image File",
-            "remove_image": "Remove Image"
+            "remove_image": "Remove Image",
+            "double_click_to_remove": "Double-click to remove"
         }
     }
 }

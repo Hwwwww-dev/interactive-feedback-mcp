@@ -101,8 +101,7 @@ def get_dark_mode_palette(app: QApplication):
     darkPalette.setColor(QPalette.Disabled, QPalette.WindowText, TEXT_MUTED)
     darkPalette.setColor(QPalette.Base, SECONDARY_BG)
     darkPalette.setColor(QPalette.AlternateBase, ACCENT_BG)
-    darkPalette.setColor(QPalette.ToolTipBase, PRIMARY_BG)
-    darkPalette.setColor(QPalette.ToolTipText, TEXT_PRIMARY)
+
     darkPalette.setColor(QPalette.Text, TEXT_PRIMARY)
     darkPalette.setColor(QPalette.Disabled, QPalette.Text, TEXT_MUTED)
     darkPalette.setColor(QPalette.Dark, QColor(18, 18, 20))
@@ -127,8 +126,7 @@ def get_light_mode_palette(app: QApplication):
     lightPalette.setColor(QPalette.Disabled, QPalette.WindowText, LIGHT_TEXT_MUTED)
     lightPalette.setColor(QPalette.Base, LIGHT_SECONDARY_BG)
     lightPalette.setColor(QPalette.AlternateBase, LIGHT_ACCENT_BG)
-    lightPalette.setColor(QPalette.ToolTipBase, LIGHT_PRIMARY_BG)
-    lightPalette.setColor(QPalette.ToolTipText, LIGHT_TEXT_PRIMARY)
+
     lightPalette.setColor(QPalette.Text, LIGHT_TEXT_PRIMARY)
     lightPalette.setColor(QPalette.Disabled, QPalette.Text, LIGHT_TEXT_MUTED)
     lightPalette.setColor(QPalette.Dark, QColor(200, 200, 200))
@@ -291,7 +289,7 @@ class ImagePreviewWidget(QWidget):
         # Use a fixed size for the entire widget to ensure consistent layout
         self.setFixedSize(140, 32)  # Optimal tab size
         
-        # Main container with relative positioning
+        # Main container
         container = QWidget(self)
         container.setGeometry(0, 0, 140, 32)
         container.setProperty("class", "image-tab")
@@ -300,6 +298,7 @@ class ImagePreviewWidget(QWidget):
         layout = QHBoxLayout(container)
         layout.setContentsMargins(8, 6, 8, 6)  # Equal margins
         layout.setSpacing(6)
+        layout.setAlignment(Qt.AlignVCenter)  # Ensure all items are vertically centered
         
         # Small icon/thumbnail (16x16 like in Cursor)
         self.image_icon = QLabel()
@@ -314,47 +313,19 @@ class ImagePreviewWidget(QWidget):
         self.filename_label = QLabel(self._get_tab_filename())
         self.filename_label.setProperty("class", "image-tab-filename")
         self.filename_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.filename_label.setToolTip(self.image_data['filename'])  # Full name on hover
         
-        # Close button as part of layout (centered vertically)
-        self.close_button = QPushButton("×")
-        self.close_button.setProperty("class", "image-tab-close")
-        self.close_button.setFixedSize(18, 18)
-        self.close_button.setToolTip(self.parent_ui.text_manager.get_text('messages', 'remove_image') if self.parent_ui else "Remove Image")
-        self.close_button.clicked.connect(self._remove_image)
-        self.close_button.setCursor(Qt.CursorShape.PointingHandCursor)
+
         
-        # Add widgets to layout in order: icon, filename, close button
+        # Add widgets to layout
         layout.addWidget(self.image_icon)
         layout.addWidget(self.filename_label)
-        layout.addWidget(self.close_button)
+        layout.addStretch()  # Push content to left
         
-        # Initially hide close button, show on hover
-        self.close_button.setVisible(False)
-        
-        # Enable mouse tracking for hover effects
-        self.setMouseTracking(True)
-        container.setMouseTracking(True)
-        
-        # Make sure all child widgets track mouse events and forward them to parent
-        self.image_icon.setMouseTracking(True)
-        self.filename_label.setMouseTracking(True)
-        self.close_button.setMouseTracking(True)
-        
-        # Connect child widget events to parent
-        def forward_enter_event(event):
-            self.enterEvent(event)
-        
-        def forward_leave_event(event):
-            self.leaveEvent(event)
-        
-        # Override child widget enter/leave events
-        self.image_icon.enterEvent = forward_enter_event
-        self.image_icon.leaveEvent = forward_leave_event
-        self.filename_label.enterEvent = forward_enter_event
-        self.filename_label.leaveEvent = forward_leave_event
-        container.enterEvent = forward_enter_event
-        container.leaveEvent = forward_leave_event
+        # Set cursor to indicate clickable
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        container.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.image_icon.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.filename_label.setCursor(Qt.CursorShape.PointingHandCursor)
     
     def _get_tab_filename(self):
         """Get a tab-friendly filename with smart truncation for fixed-width tabs."""
@@ -432,15 +403,11 @@ class ImagePreviewWidget(QWidget):
     
 
     
-    def enterEvent(self, event):
-        """Show close button on mouse enter."""
-        self.close_button.setVisible(True)
-        super().enterEvent(event)
-    
-    def leaveEvent(self, event):
-        """Hide close button on mouse leave."""
-        self.close_button.setVisible(False)
-        super().leaveEvent(event)
+    def mouseDoubleClickEvent(self, event):
+        """Handle double-click to remove image."""
+        if event.button() == Qt.LeftButton:
+            self._remove_image()
+        super().mouseDoubleClickEvent(event)
     
     def _remove_image(self):
         """Remove this image from the parent widget with smooth animation."""
@@ -853,11 +820,7 @@ class FeedbackUI(QMainWindow):
         self.language_toggle_button.setProperty("class", "secondary")
         self.language_toggle_button.clicked.connect(self.toggle_language)
         self.language_toggle_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        # Set tooltip to show language names
-        if current_lang == 'zh':
-            self.language_toggle_button.setToolTip("切换到 English")
-        else:
-            self.language_toggle_button.setToolTip("切换到中文")
+
         
         # Stay on Top Toggle Button (10% width)
         stay_on_top_icon = self.text_manager.get_text('buttons', 'stay_on_top_on' if self.stay_on_top else 'stay_on_top_off')
@@ -865,7 +828,6 @@ class FeedbackUI(QMainWindow):
         self.stay_on_top_button.setProperty("class", "secondary")
         self.stay_on_top_button.clicked.connect(self.toggle_stay_on_top)
         self.stay_on_top_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.update_stay_on_top_tooltip()
         
         # Add buttons to layout with 6:1:1:1:1 ratio
         buttons_layout.addWidget(self.toggle_command_button, 6)
@@ -1034,7 +996,7 @@ class FeedbackUI(QMainWindow):
         self.add_image_button.setProperty("class", "secondary")
         self.add_image_button.clicked.connect(self._add_image)
         self.add_image_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.add_image_button.setToolTip(self.text_manager.get_tooltip('add_image'))
+
         
         self.submit_button = QPushButton(self.text_manager.get_text('buttons', 'send_feedback'))
         self.submit_button.clicked.connect(self._submit_feedback)
@@ -1176,7 +1138,7 @@ class FeedbackUI(QMainWindow):
         # Toggle language in text manager
         new_lang = self.text_manager.toggle_language()
         
-        # Update language button text and tooltip
+        # Update language button text
         self.update_language_button()
         
         # Update bottom project path label
@@ -1184,13 +1146,9 @@ class FeedbackUI(QMainWindow):
             formatted_path = self._format_windows_path(self.project_directory)
             self.bottom_path_label.setText(self.text_manager.get_text('labels', 'project_path', path=formatted_path))
         
-        # Update stay on top button tooltip
-        if hasattr(self, 'stay_on_top_button'):
-            self.update_stay_on_top_tooltip()
+
         
-        # Update add image button tooltip
-        if hasattr(self, 'add_image_button'):
-            self.add_image_button.setToolTip(self.text_manager.get_tooltip('add_image'))
+
         
         # Show top notification banner
         if new_lang == 'zh':
@@ -1239,35 +1197,24 @@ class FeedbackUI(QMainWindow):
             self.notification_banner = None
 
     def update_language_button(self):
-        """Update language button text and tooltip."""
+        """Update language button text."""
         current_lang = self.text_manager.get_current_language()
         language_text = self.text_manager.get_text('buttons', f'language_{current_lang}')
         self.language_toggle_button.setText(language_text)
-        
-        # Update tooltip
-        if current_lang == 'zh':
-            self.language_toggle_button.setToolTip("切换到 English")
-        else:
-            self.language_toggle_button.setToolTip("切换到中文")
     
     def toggle_stay_on_top(self):
         """Toggle window stay on top state."""
         self.stay_on_top = not self.stay_on_top
         self._apply_stay_on_top()
         
-        # Update button icon and tooltip
+        # Update button icon
         stay_on_top_icon = self.text_manager.get_text('buttons', 'stay_on_top_on' if self.stay_on_top else 'stay_on_top_off')
         self.stay_on_top_button.setText(stay_on_top_icon)
-        self.update_stay_on_top_tooltip()
         
         # Save preference
         self.settings.setValue("stay_on_top", self.stay_on_top)
     
-    def update_stay_on_top_tooltip(self):
-        """Update stay on top button tooltip."""
-        tooltip_key = 'stay_on_top_on' if self.stay_on_top else 'stay_on_top_off'
-        tooltip_text = self.text_manager.get_tooltip(tooltip_key)
-        self.stay_on_top_button.setToolTip(tooltip_text)
+
     
     def _apply_stay_on_top(self):
         """Apply stay on top setting to the window."""
