@@ -435,6 +435,8 @@ class FeedbackTextEdit(QTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setAcceptDrops(True)
+        # Enable input method support for Chinese and other non-Latin languages
+        self.setAttribute(Qt.WA_InputMethodEnabled, True)
         self.images = []  # Store image data as list of dicts
         self.text_files = []  # Store text file data as list of dicts
 
@@ -448,6 +450,21 @@ class FeedbackTextEdit(QTextEdit):
                 parent._submit_feedback()
         else:
             super().keyPressEvent(event)
+    
+    def inputMethodEvent(self, event):
+        """Handle input method events for Chinese and other non-Latin languages."""
+        super().inputMethodEvent(event)
+        # Ensure the input method composition is properly handled
+        if event.commitString():
+            # The text has been committed, no additional processing needed
+            pass
+    
+    def focusInEvent(self, event):
+        """Handle focus in events to ensure input method is properly activated."""
+        super().focusInEvent(event)
+        # On macOS, explicitly activate input method when gaining focus
+        if sys.platform == "darwin":
+            self.setAttribute(Qt.WA_InputMethodEnabled, True)
 
     def insertFromMimeData(self, source: QMimeData) -> None:
         """
@@ -1173,6 +1190,8 @@ class FeedbackUI(QMainWindow):
         command_input_layout = QHBoxLayout()
         command_input_layout.setSpacing(10)
         self.command_entry = QLineEdit()
+        # Enable input method support for Chinese and other non-Latin languages
+        self.command_entry.setAttribute(Qt.WA_InputMethodEnabled, True)
         self.command_entry.setPlaceholderText(self.text_manager.get_text('placeholders', 'command_input'))
         self.command_entry.setText(self.config["run_command"])
         self.command_entry.returnPressed.connect(self._run_command)
@@ -1546,6 +1565,9 @@ class FeedbackUI(QMainWindow):
         current_pos = self.pos()
         current_size = self.size()
         
+        # Store the currently focused widget to restore focus later
+        focused_widget = self.focusWidget()
+        
         # Update window flags
         flags = self.windowFlags()
         if self.stay_on_top:
@@ -1570,6 +1592,9 @@ class FeedbackUI(QMainWindow):
                 # Additional raise for macOS
                 self.raise_()
                 self.activateWindow()
+                # Restore focus to the previously focused widget to maintain input method context
+                if focused_widget:
+                    QTimer.singleShot(100, lambda: focused_widget.setFocus())
     
     def _add_file(self):
         """Open file dialog to select a file (image or text)."""
@@ -1843,10 +1868,50 @@ class FeedbackUI(QMainWindow):
             self._append_log(self.text_manager.get_text('messages', 'command_error', error=str(e)))
             self.run_button.setText(self.text_manager.get_text('buttons', 'run'))
 
+    def _format_attachment_summary(self) -> str:
+        """Format attachment summary for feedback content."""
+        images = self.feedback_text.get_images()
+        text_files = self.feedback_text.get_text_files()
+        
+        if not images and not text_files:
+            return ""
+        
+        summary_parts = []
+        
+        # Add header
+        summary_parts.append(self.text_manager.get_text('messages', 'attachment_summary_header'))
+        
+        # Add images info
+        if images:
+            if len(images) == 1:
+                summary_parts.append(self.text_manager.get_text('messages', 'attachment_single_image', filename=images[0]['filename']))
+            else:
+                filenames = ", ".join([img['filename'] for img in images])
+                summary_parts.append(self.text_manager.get_text('messages', 'attachment_images', count=len(images), filenames=filenames))
+        
+        # Add text files info
+        if text_files:
+            if len(text_files) == 1:
+                summary_parts.append(self.text_manager.get_text('messages', 'attachment_single_text_file', filename=text_files[0]['filename']))
+            else:
+                filenames = ", ".join([file['filename'] for file in text_files])
+                summary_parts.append(self.text_manager.get_text('messages', 'attachment_text_files', count=len(text_files), filenames=filenames))
+        
+        return "\n".join(summary_parts)
+
     def _submit_feedback(self):
+        # Get original feedback text (without any attachment summary)
+        original_feedback = self.feedback_text.toPlainText().strip()
+        
+        # Generate attachment summary dynamically at submission time
+        attachment_summary = self._format_attachment_summary()
+        
+        # Combine original feedback with attachment summary for final output
+        final_feedback = original_feedback + attachment_summary if attachment_summary else original_feedback
+        
         self.feedback_result = FeedbackResult(
             logs="".join(self.log_buffer),
-            interactive_feedback=self.feedback_text.toPlainText().strip(),
+            interactive_feedback=final_feedback,
             images=self.feedback_text.get_images(),
             text_files=self.feedback_text.get_text_files()
         )
@@ -1894,11 +1959,13 @@ class FeedbackUI(QMainWindow):
     def run(self) -> FeedbackResult:
         self.show()
         
-        # 在macOS上，窗口显示后设置置顶
+        # 在macOS上，窗口显示后设置置顶并确保输入法正常工作
         if sys.platform == "darwin":
             self.raise_()
             self.activateWindow()
-            print(f"Debug: macOS window raised and activated")
+            # Give the system time to properly initialize the window and input method
+            QTimer.singleShot(200, lambda: self.feedback_text.setFocus())
+            print(f"Debug: macOS window raised and activated with input method support")
         
         QApplication.instance().exec()
 
