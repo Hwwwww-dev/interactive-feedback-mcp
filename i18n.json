@@ -130,7 +130,12 @@
             "max_text_files_reached": "最多只能添加5个文本文件",
             "text_file_too_large": "文本文件太大，请选择小于5MB的文件",
             "max_files_reached": "已达到文件数量限制",
-            "unsupported_file_type": "不支持的文件类型"
+            "unsupported_file_type": "不支持的文件类型",
+            "attachment_summary_header": "\n\n--- 附件信息 ---",
+            "attachment_images": "图片附件({count}个，存储在images字段): {filenames}",
+            "attachment_text_files": "文件附件({count}个，存储在text_files字段): {filenames}",
+            "attachment_single_image": "图片附件(存储在images字段): {filename}",
+            "attachment_single_text_file": "文件附件(存储在text_files字段): {filename}"
         },
         "en": {
             "process_exited": "\nProcess exited with code {code}\n",
@@ -149,7 +154,12 @@
             "max_text_files_reached": "Maximum 5 text files allowed",
             "text_file_too_large": "Text file is too large, please select a file smaller than 5MB",
             "max_files_reached": "File limit reached",
-            "unsupported_file_type": "Unsupported file type"
+            "unsupported_file_type": "Unsupported file type",
+            "attachment_summary_header": "\n\n--- Attachments ---",
+            "attachment_images": "Images ({count}, stored in images field): {filenames}",
+            "attachment_text_files": "Files ({count}, stored in text_files field): {filenames}",
+            "attachment_single_image": "Image (stored in images field): {filename}",
+            "attachment_single_text_file": "File (stored in text_files field): {filename}"
         }
     }
 }
