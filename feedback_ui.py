@@ -2,6 +2,7 @@
 # Developed by Fábio Ferreira (https://x.com/fabiomlferreira)
 # Inspired by/related to dotcursorrules.com (https://dotcursorrules.com/)
 import argparse
+import html
 import base64
 import hashlib
 import json
@@ -1263,15 +1264,26 @@ class FeedbackUI(QMainWindow):
         self.section_title.setProperty("class", "section-title")
         feedback_layout.addWidget(self.section_title)
 
-        # Short description label (from self.prompt)
-        self.description_label = QLabel(f"""<p style="line-height: 1.4;">{self.prompt}</p>""")
+        # Short description label (from self.prompt) with collapsible long text
+        self._full_prompt_html = html.escape(self.prompt).replace("\n", "<br/>")
+        self._collapsed_lines = 4
+        self._is_collapsed = True
+
+        self.description_label = QLabel()
         self.description_label.setProperty("class", "description")
         self.description_label.setWordWrap(True)
         self.description_label.setTextFormat(Qt.RichText)
-        self.description_label.setContentsMargins(0, 0, 0, 12)  # Add bottom margin
-        # Enable text selection for copy functionality
+        self.description_label.setContentsMargins(0, 0, 0, 12)
         self.description_label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
         feedback_layout.addWidget(self.description_label)
+
+        self.toggle_summary_button = QPushButton()
+        self.toggle_summary_button.setProperty("class", "secondary")
+        self.toggle_summary_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.toggle_summary_button.clicked.connect(self._toggle_summary_collapse)
+        feedback_layout.addWidget(self.toggle_summary_button)
+
+        self._render_summary()
 
         self.feedback_text = FeedbackTextEdit()
         font_metrics = self.feedback_text.fontMetrics()
@@ -1499,6 +1511,34 @@ class FeedbackUI(QMainWindow):
             message = "Language switched to English, interface will be in English on next startup."
         
         self.show_notification_banner(message)
+        # Refresh summary render and toggle button text based on language
+        if hasattr(self, 'toggle_summary_button'):
+            self._render_summary()
+
+    def _toggle_summary_collapse(self):
+        """Toggle collapse state for the summary and re-render."""
+        self._is_collapsed = not self._is_collapsed
+        self._render_summary()
+
+    def _render_summary(self):
+        """Render summary text with collapse/expand behavior and localized button label."""
+        lines = self.prompt.splitlines()
+        has_extra = len(lines) > self._collapsed_lines
+        if self._is_collapsed and has_extra:
+            display_lines = lines[: self._collapsed_lines]
+            collapsed_html = "<br/>".join(html.escape(line) for line in display_lines) + " ..."
+            html_body = collapsed_html
+        else:
+            html_body = self._full_prompt_html
+
+        self.description_label.setText(f'<p style="line-height: 1.4;">{html_body}</p>')
+
+        if has_extra:
+            key = 'expand_summary' if self._is_collapsed else 'collapse_summary'
+            self.toggle_summary_button.setText(self.text_manager.get_text('buttons', key))
+            self.toggle_summary_button.show()
+        else:
+            self.toggle_summary_button.hide()
 
 
 

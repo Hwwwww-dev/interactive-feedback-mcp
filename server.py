@@ -64,10 +64,10 @@ def first_line(text: str) -> str:
 @mcp.tool()
 def interactive_feedback(
     project_directory: Annotated[str, Field(description="Full path to the project directory")],
-    summary: Annotated[str, Field(description="Short, one-line summary of the changes")],
+    summary: Annotated[str, Field(description="Short summary of the changes (supports multiple lines)")],
 ) -> Dict[str, str]:
     """Request interactive feedback for a given project directory and summary"""
-    return launch_feedback_ui(first_line(project_directory), first_line(summary))
+    return launch_feedback_ui(first_line(project_directory), summary)
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")

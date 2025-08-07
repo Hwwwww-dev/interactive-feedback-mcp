@@ -39,7 +39,9 @@
             "stay_on_top_on": "📌",
             "stay_on_top_off": "📍",
             "add_image": "📎",
-            "add_file": "📎"
+            "add_file": "📎",
+            "expand_summary": "展开",
+            "collapse_summary": "收起"
         },
         "en": {
             "command_section": "Command Section",
@@ -58,7 +60,9 @@
             "stay_on_top_on": "📌",
             "stay_on_top_off": "📍",
             "add_image": "📎",
-            "add_file": "📎"
+            "add_file": "📎",
+            "expand_summary": "Expand",
+            "collapse_summary": "Collapse"
         }
     },
             "labels": {
