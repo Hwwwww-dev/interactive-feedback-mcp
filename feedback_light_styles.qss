@@ -191,6 +191,15 @@ QLabel[class="description"] {
     line-height: 1.7;
 }
 
+QTextBrowser[class="description"] {
+    color: rgb(15, 23, 42);
+    font-size: 16px;
+    line-height: 1.7;
+    background-color: transparent;
+    border: none;
+    padding: 0px;
+}
+
 QLabel[class="section-title"] {
     color: rgb(71, 85, 105);
     font-size: 12px;

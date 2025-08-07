@@ -20,7 +20,7 @@ from PySide6.QtCore import Qt, Signal, QObject, QTimer, QSettings, QMimeData, QU
 from PySide6.QtGui import QTextCursor, QIcon, QKeyEvent, QFont, QFontDatabase, QPalette, QColor, QPixmap, QDragEnterEvent, QDropEvent
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QLabel, QLineEdit, QPushButton, QCheckBox, QTextEdit, QGroupBox, QGridLayout, QFileDialog, QMessageBox, QScrollArea, QFrame, QSizePolicy
+    QLabel, QLineEdit, QPushButton, QCheckBox, QTextEdit, QTextBrowser, QGroupBox, QGridLayout, QFileDialog, QMessageBox, QScrollArea, QFrame, QSizePolicy
 )
 
 # Import bilingual text manager
@@ -1268,13 +1268,19 @@ class FeedbackUI(QMainWindow):
         self._full_prompt_html = html.escape(self.prompt).replace("\n", "<br/>")
         self._collapsed_lines = 4
         self._is_collapsed = True
+        self._summary_max_height = 140
 
-        self.description_label = QLabel()
+        self.description_label = QTextBrowser()
         self.description_label.setProperty("class", "description")
-        self.description_label.setWordWrap(True)
-        self.description_label.setTextFormat(Qt.RichText)
+        self.description_label.setFrameShape(QFrame.NoFrame)
+        self.description_label.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.description_label.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.description_label.setReadOnly(True)
+        self.description_label.setLineWrapMode(QTextEdit.WidgetWidth)
         self.description_label.setContentsMargins(0, 0, 0, 12)
         self.description_label.setTextInteractionFlags(Qt.TextSelectableByMouse | Qt.TextSelectableByKeyboard)
+        self.description_label.setMaximumHeight(self._summary_max_height)
+        self.description_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         feedback_layout.addWidget(self.description_label)
 
         self.toggle_summary_button = QPushButton()
@@ -1375,9 +1381,9 @@ class FeedbackUI(QMainWindow):
         feedback_layout.addLayout(button_layout)
 
         # Set minimum height for feedback_group to accommodate its contents
-        # This will be based on the section title, description label and the 3-line feedback_text
+        # This will be based on the section title, summary (capped height), and the 3-line feedback_text
         self.feedback_group.setMinimumHeight(
-            self.section_title.sizeHint().height() + self.description_label.sizeHint().height() + self.feedback_text.minimumHeight() + self.submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10)  # 10 for extra padding
+            self.section_title.sizeHint().height() + self._summary_max_height + self.toggle_summary_button.sizeHint().height() + self.feedback_text.minimumHeight() + self.submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10)  # 10 for extra padding
 
         # Add widgets in a specific order
         layout.addWidget(self.feedback_group)
@@ -1531,7 +1537,7 @@ class FeedbackUI(QMainWindow):
         else:
             html_body = self._full_prompt_html
 
-        self.description_label.setText(f'<p style="line-height: 1.4;">{html_body}</p>')
+        self.description_label.setHtml(f'<p style="line-height: 1.4;">{html_body}</p>')
 
         if has_extra:
             key = 'expand_summary' if self._is_collapsed else 'collapse_summary'
@@ -2055,7 +2061,7 @@ def feedback_ui(project_directory: str, prompt: str, output_file: Optional[str] 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run the feedback UI")
     parser.add_argument("--project-directory", default=os.getcwd(), help="The project directory to run the command in")
-    parser.add_argument("--prompt", default="I implemented the changes you requested.",
+    parser.add_argument("--prompt", default="I implemented the changes you requested.\nI implemented the changes you requested.\nI implemented the changes you requested.\nI implemented the changes you requested.\nI implemented the changes you requested.\nI implemented the changes you requested.\nI implemented the changes you requested.\nI implemented the changes you requested.\n",
                         help="The prompt to show to the user")
     parser.add_argument("--output-file", help="Path to save the feedback result as JSON")
     args = parser.parse_args()
