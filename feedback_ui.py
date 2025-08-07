@@ -1283,11 +1283,7 @@ class FeedbackUI(QMainWindow):
         self.description_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         feedback_layout.addWidget(self.description_label)
 
-        self.toggle_summary_button = QPushButton()
-        self.toggle_summary_button.setProperty("class", "secondary")
-        self.toggle_summary_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.toggle_summary_button.clicked.connect(self._toggle_summary_collapse)
-        feedback_layout.addWidget(self.toggle_summary_button)
+        # Remove expand/collapse button; keep full content in a scrollable area
 
         self._render_summary()
 
@@ -1383,7 +1379,7 @@ class FeedbackUI(QMainWindow):
         # Set minimum height for feedback_group to accommodate its contents
         # This will be based on the section title, summary (capped height), and the 3-line feedback_text
         self.feedback_group.setMinimumHeight(
-            self.section_title.sizeHint().height() + self._summary_max_height + self.toggle_summary_button.sizeHint().height() + self.feedback_text.minimumHeight() + self.submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10)  # 10 for extra padding
+            self.section_title.sizeHint().height() + self._summary_max_height + self.feedback_text.minimumHeight() + self.submit_button.sizeHint().height() + feedback_layout.spacing() * 3 + feedback_layout.contentsMargins().top() + feedback_layout.contentsMargins().bottom() + 10)  # 10 for extra padding
 
         # Add widgets in a specific order
         layout.addWidget(self.feedback_group)
@@ -1518,33 +1514,14 @@ class FeedbackUI(QMainWindow):
         
         self.show_notification_banner(message)
         # Refresh summary render and toggle button text based on language
-        if hasattr(self, 'toggle_summary_button'):
-            self._render_summary()
-
-    def _toggle_summary_collapse(self):
-        """Toggle collapse state for the summary and re-render."""
-        self._is_collapsed = not self._is_collapsed
         self._render_summary()
+
+    # Removed expand/collapse toggle; always render full content with scrollbar
 
     def _render_summary(self):
         """Render summary text with collapse/expand behavior and localized button label."""
-        lines = self.prompt.splitlines()
-        has_extra = len(lines) > self._collapsed_lines
-        if self._is_collapsed and has_extra:
-            display_lines = lines[: self._collapsed_lines]
-            collapsed_html = "<br/>".join(html.escape(line) for line in display_lines) + " ..."
-            html_body = collapsed_html
-        else:
-            html_body = self._full_prompt_html
-
+        html_body = self._full_prompt_html
         self.description_label.setHtml(f'<p style="line-height: 1.4;">{html_body}</p>')
-
-        if has_extra:
-            key = 'expand_summary' if self._is_collapsed else 'collapse_summary'
-            self.toggle_summary_button.setText(self.text_manager.get_text('buttons', key))
-            self.toggle_summary_button.show()
-        else:
-            self.toggle_summary_button.hide()
 
 
 
